@@ -23,7 +23,9 @@ export default function MovieDetailPage() {
   useEffect(() => {
     // Check user authentication status
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
     };
     getUser();
@@ -105,10 +107,10 @@ export default function MovieDetailPage() {
             onClick={() => {
               // Build query string with all filters
               const params = new URLSearchParams();
-              params.set('page', currentPage.toString());
-              if (searchParam) params.set('search', searchParam);
-              if (genreParam) params.set('genre', genreParam);
-              if (yearParam) params.set('year', yearParam);
+              params.set("page", currentPage.toString());
+              if (searchParam) params.set("search", searchParam);
+              if (genreParam) params.set("genre", genreParam);
+              if (yearParam) params.set("year", yearParam);
               navigate(`/movies?${params.toString()}`);
             }}
             className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
@@ -123,14 +125,14 @@ export default function MovieDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Movie Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-8">
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
           {/* Centered Layout - Same for all screen sizes */}
-          <div className="flex flex-col items-center space-y-8 p-8 lg:p-12">
+          <div className="flex flex-col items-center space-y-8 p-4 md:p-8 lg:p-12">
             {/* Poster Section - Always Centered */}
             <div className="flex justify-center">
               <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 hidden md:block"></div>
                 <div className="relative">
                   <img
                     src={movie.poster_url || "/placeholder-movie.jpg"}
@@ -159,7 +161,7 @@ export default function MovieDetailPage() {
             </div>
 
             {/* Content Section - Below Poster */}
-            <div className="w-full max-w-4xl space-y-8">
+            <div className="w-full max-w-4xl md:max-w-4xl space-y-8">
               {/* Title and Basic Info */}
               <div className="text-center">
                 <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
@@ -167,7 +169,7 @@ export default function MovieDetailPage() {
                 </h1>
 
                 {/* Movie Meta Info */}
-                <div className="flex flex-wrap justify-center gap-4 mb-6">
+                <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-6 w-full px-2 md:px-0">
                   {movie.release_date && (
                     <div className="flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-full">
                       <span className="text-indigo-600">📅</span>
@@ -207,7 +209,7 @@ export default function MovieDetailPage() {
               </div>
 
               {/* Overview Section */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 lg:p-8">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 md:p-6 lg:p-8">
                 <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                   <div className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
                   Overview
@@ -221,7 +223,7 @@ export default function MovieDetailPage() {
               {movie.genres &&
                 Array.isArray(movie.genres) &&
                 movie.genres.length > 0 && (
-                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 lg:p-8">
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-4 md:p-6 lg:p-8">
                     <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                       <div className="w-2 h-8 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
                       Genres
@@ -245,10 +247,10 @@ export default function MovieDetailPage() {
                   onClick={() => {
                     // Build query string with all filters
                     const params = new URLSearchParams();
-                    params.set('page', currentPage.toString());
-                    if (searchParam) params.set('search', searchParam);
-                    if (genreParam) params.set('genre', genreParam);
-                    if (yearParam) params.set('year', yearParam);
+                    params.set("page", currentPage.toString());
+                    if (searchParam) params.set("search", searchParam);
+                    if (genreParam) params.set("genre", genreParam);
+                    if (yearParam) params.set("year", yearParam);
                     navigate(`/movies?${params.toString()}`);
                   }}
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-8 rounded-xl font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
