@@ -132,7 +132,7 @@ export default function MovieDetailPage() {
             {/* Poster Section - Always Centered */}
             <div className="flex justify-center">
               <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 hidden md:block"></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 hidden md:block"></div>
                 <div className="relative">
                   <img
                     src={movie.poster_url || "/placeholder-movie.jpg"}

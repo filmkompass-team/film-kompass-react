@@ -23,14 +23,14 @@ export default function Movies() {
   const [filters, setFilters] = useState<FilterType>(() => {
     // Initialize filters from URL parameters
     const urlFilters: FilterType = {};
-    const search = searchParams.get('search');
-    const genre = searchParams.get('genre');
-    const year = searchParams.get('year');
-    
+    const search = searchParams.get("search");
+    const genre = searchParams.get("genre");
+    const year = searchParams.get("year");
+
     if (search) urlFilters.search = search;
     if (genre) urlFilters.genre = genre;
     if (year) urlFilters.year = parseInt(year);
-    
+
     return urlFilters;
   });
   const [genres, setGenres] = useState<string[]>([]);
@@ -78,34 +78,40 @@ export default function Movies() {
 
   const handlePageChange = (page: number) => {
     fetchMovies(page);
-    // Update URL with new page number
-    navigate(`/movies?page=${page}`, { replace: true });
+    // Update URL with new page number while preserving current filters
+    const params = new URLSearchParams();
+    params.set("page", page.toString());
+    if (filters.search) params.set("search", filters.search);
+    if (filters.genre) params.set("genre", filters.genre);
+    if (filters.year) params.set("year", filters.year.toString());
+
+    navigate(`/movies?${params.toString()}`, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleFiltersChange = (newFilters: FilterType) => {
     setFilters(newFilters);
-    
+
     // Update URL with new filters
     const params = new URLSearchParams();
-    if (newFilters.search) params.set('search', newFilters.search);
-    if (newFilters.genre) params.set('genre', newFilters.genre);
-    if (newFilters.year) params.set('year', newFilters.year.toString());
-    
+    if (newFilters.search) params.set("search", newFilters.search);
+    if (newFilters.genre) params.set("genre", newFilters.genre);
+    if (newFilters.year) params.set("year", newFilters.year.toString());
+
     // Reset to page 1 when filters change
-    params.set('page', '1');
-    
+    params.set("page", "1");
+
     setSearchParams(params);
   };
 
   const handleMovieClick = (movie: Movie) => {
     // Build query string with current filters and page
     const params = new URLSearchParams();
-    params.set('page', pagination.currentPage.toString());
-    if (filters.search) params.set('search', filters.search);
-    if (filters.genre) params.set('genre', filters.genre);
-    if (filters.year) params.set('year', filters.year.toString());
-    
+    params.set("page", pagination.currentPage.toString());
+    if (filters.search) params.set("search", filters.search);
+    if (filters.genre) params.set("genre", filters.genre);
+    if (filters.year) params.set("year", filters.year.toString());
+
     navigate(`/movie/${movie.tmdb_id}?${params.toString()}`);
   };
 
@@ -114,12 +120,11 @@ export default function Movies() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Movies
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Movies</h1>
           <p className="text-xl text-gray-600">
-            Discover your next favorite film with AI-powered recommendations, smart search, and filters. 
-            Browse our collection of 8,000+ movies or describe what you want to watch in natural language.
+            Discover your next favorite film with AI-powered recommendations,
+            smart search, and filters. Browse our collection of 8,000+ movies or
+            describe what you want to watch in natural language.
           </p>
         </div>
 
