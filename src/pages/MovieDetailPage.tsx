@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import type { Movie } from "../types/movie";
 import { MovieService } from "../services/movieService";
+import { UserListService } from "../services/userListService";
 import supabase from "../utils/supabase";
 
 export default function MovieDetailPage() {
@@ -11,7 +12,11 @@ export default function MovieDetailPage() {
   const [movie, setMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isWatched, setIsWatched] = useState(false);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
 
   // Get the page number and filters from URL params
   const pageParam = searchParams.get("page");
@@ -50,15 +55,21 @@ export default function MovieDetailPage() {
         } else {
           setError("Movie not found");
         }
-      } catch (err) {
+      } catch {
         setError("An error occurred while loading the movie");
       } finally {
         setLoading(false);
       }
     };
-
     fetchMovie();
   }, [id]);
+
+  // Check movie list status when movie and user are available
+  useEffect(() => {
+    if (movie && user) {
+      checkMovieListStatus(movie.tmdb_id);
+    }
+  }, [movie, user]);
 
   const formatRuntime = (minutes: number | null) => {
     if (!minutes || typeof minutes !== "number" || minutes <= 0) return "N/A";
@@ -78,6 +89,73 @@ export default function MovieDetailPage() {
     if (rating >= 7) return "bg-yellow-500";
     if (rating >= 6) return "bg-orange-500";
     return "bg-red-500";
+  };
+
+  const checkMovieListStatus = async (movieId: number) => {
+    try {
+      const [favorite, watched, wishlist] = await Promise.all([
+        UserListService.checkMovieInList(movieId, "favorites"),
+        UserListService.checkMovieInList(movieId, "watched"),
+        UserListService.checkMovieInList(movieId, "wishlist"),
+      ]);
+
+      setIsFavorite(favorite);
+      setIsWatched(watched);
+      setIsInWishlist(wishlist);
+    } catch (error) {
+      console.error("Error checking movie list status:", error);
+    }
+  };
+
+  const handleListAction = async (
+    listType: "favorites" | "watched" | "wishlist"
+  ) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (!movie) return;
+
+    setListLoading(true);
+    try {
+      const isInList =
+        listType === "favorites"
+          ? isFavorite
+          : listType === "watched"
+          ? isWatched
+          : isInWishlist;
+
+      if (isInList) {
+        await UserListService.removeFromList(movie.tmdb_id, listType);
+        if (listType === "favorites") setIsFavorite(false);
+        else if (listType === "watched") setIsWatched(false);
+        else if (listType === "wishlist") setIsInWishlist(false);
+      } else {
+        await UserListService.addToList(movie.tmdb_id, listType);
+        if (listType === "favorites") setIsFavorite(true);
+        else if (listType === "watched") setIsWatched(true);
+        else if (listType === "wishlist") setIsInWishlist(true);
+      }
+    } catch (error) {
+      const isInList =
+        listType === "favorites"
+          ? isFavorite
+          : listType === "watched"
+          ? isWatched
+          : isInWishlist;
+      console.error(
+        `Error ${isInList ? "removing from" : "adding to"} ${listType}:`,
+        error
+      );
+      alert(
+        `Error ${
+          isInList ? "removing from" : "adding to"
+        } ${listType}. Please try again.`
+      );
+    } finally {
+      setListLoading(false);
+    }
   };
 
   if (loading) {
@@ -242,7 +320,8 @@ export default function MovieDetailPage() {
                 )}
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="space-y-4">
+                {/* Back to Movies Button */}
                 <button
                   onClick={() => {
                     // Build query string with all filters
@@ -253,7 +332,7 @@ export default function MovieDetailPage() {
                     if (yearParam) params.set("year", yearParam);
                     navigate(`/movies?${params.toString()}`);
                   }}
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-8 rounded-xl font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-8 rounded-xl font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
                 >
                   <svg
                     className="w-5 h-5"
@@ -270,33 +349,99 @@ export default function MovieDetailPage() {
                   </svg>
                   Back to Movies
                 </button>
-                <button
-                  onClick={() => {
-                    if (user) {
-                      // User is logged in, show coming soon
-                      alert("Feature coming soon!");
-                    } else {
-                      // User is not logged in, redirect to login
-                      navigate("/login");
-                    }
-                  }}
-                  className="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 py-4 px-8 rounded-xl font-semibold text-lg hover:bg-indigo-50 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+
+                {/* List Action Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Favorites Button */}
+                  <button
+                    onClick={() => handleListAction("favorites")}
+                    disabled={listLoading}
+                    className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isFavorite
+                        ? "bg-red-600 text-white hover:bg-red-700"
+                        : "bg-white border-2 border-red-600 text-red-600 hover:bg-red-50"
+                    }`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                  {user ? "Add to Favourites" : "Login to Add Favourites"}
-                </button>
+                    <svg
+                      className="w-5 h-5"
+                      fill={isFavorite ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                    {user
+                      ? isFavorite
+                        ? "❤️ Favorited"
+                        : "🤍 Add to Favorites"
+                      : "Login for Favorites"}
+                  </button>
+
+                  {/* Watched Button */}
+                  <button
+                    onClick={() => handleListAction("watched")}
+                    disabled={listLoading}
+                    className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isWatched
+                        ? "bg-green-600 text-white hover:bg-green-700"
+                        : "bg-white border-2 border-green-600 text-green-600 hover:bg-green-50"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    {user
+                      ? isWatched
+                        ? "✅ Watched"
+                        : "👁️ Mark as Watched"
+                      : "Login for Watched"}
+                  </button>
+
+                  {/* Wishlist Button */}
+                  <button
+                    onClick={() => handleListAction("wishlist")}
+                    disabled={listLoading}
+                    className={`py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      isInWishlist
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    {user
+                      ? isInWishlist
+                        ? "📝 In Wishlist"
+                        : "⏰ Add to Wishlist"
+                      : "Login for Wishlist"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
