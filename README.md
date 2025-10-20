@@ -39,8 +39,8 @@ src/
 - [x] Responsive design
 - [x] Movie detail pages
 - [x] User authentication (email verification)
+- [x] User watchlists (planned)
 - [ ] AI recommendations (planned)
-- [ ] User watchlists (planned)
 - [ ] Reviews and ratings (planned)
 
 ## Getting Started
@@ -48,41 +48,18 @@ src/
 1. **Clone and install:**
 
    ```bash
-   git clone https://github.com/berkekucuk/film-compass.git
-   cd film-compass
+   git clone https://github.com/filmkompass-team/filmkompass.git
+   cd filmkompass/frontend
    npm install
    ```
 
-2. **Supabase Setup (Required for contributors):**
+2. **Environment Setup**
 
-   This project uses Supabase for authentication and database functionality. To contribute, you'll need to set up your own Supabase project:
+This project uses environment variables for configuration.  
+To set up your local environment, follow these steps carefully:
 
-   a. **Create a Supabase project:**
-
-   - Go to [supabase.com](https://supabase.com)
-   - Create a new account or sign in
-   - Create a new project
-   - Wait for the project to be ready
-
-   b. **Get your project credentials:**
-
-   - Go to the connect section in the navbar
-   - Select App Frameworks → React → Vite
-   - Copy your Project URL and anon key
-
-   c. **Create environment file:**
-   Create a `.env` file in the project root and add your Supabase credentials:
-
-   ```
-   VITE_SUPABASE_URL=your_project_url_here
-   VITE_SUPABASE_ANON_KEY=your_anon_key_here
-   ```
-
-   d. **Set up authentication (optional for basic development):**
-
-   - Go to Authentication → Settings in your Supabase dashboard
-   - Configure email settings if you want to test authentication features
-   - The app will work without authentication for basic movie browsing
+Duplicate the `.env.example` file included in the repository and rename it to `.env`:
+Open the .env file and replace the placeholder values with the real keys.
 
 3. **Run development server:**
 
