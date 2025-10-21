@@ -48,8 +48,8 @@ src/
 1. **Clone and install:**
 
    ```bash
-   git clone https://github.com/filmkompass-team/filmkompass.git
-   cd filmkompass/frontend
+   git clone https://github.com/filmkompass-team/film-kompass-react.git
+   cd film-kompass-react
    npm install
    ```
 
