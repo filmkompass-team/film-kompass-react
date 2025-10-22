@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { UserListService } from "../services/userListService";
 import { MovieService } from "../services/movieService";
@@ -16,6 +16,7 @@ export default function MyListsPage() {
   const [activeList, setActiveList] = useState<
     "favorites" | "watched" | "wishlist"
   >("favorites");
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -53,7 +54,7 @@ export default function MyListsPage() {
       }
       const currentListType = listType || activeList;
       try {
-        setLoading(true);
+        setLoading(isInitialLoad.current);
         setError(null);
         console.log(
           "MyListsPage - Starting to fetch movies from list:",
@@ -95,6 +96,7 @@ export default function MyListsPage() {
         console.error("MyListsPage - Error fetching movies from list:", error);
         setError("Failed to load movies from your list.");
       } finally {
+        isInitialLoad.current = false;
         setLoading(false);
       }
     };
