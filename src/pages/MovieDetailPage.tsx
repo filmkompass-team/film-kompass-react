@@ -10,7 +10,6 @@ export default function MovieDetailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [movie, setMovie] = useState<Movie | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [isFavorite, setIsFavorite] = useState(false);
@@ -41,12 +40,10 @@ export default function MovieDetailPage() {
     const fetchMovie = async () => {
       if (!id) {
         setError("Movie ID not found");
-        setLoading(false);
         return;
       }
 
       try {
-        setLoading(true);
         setError(null);
         const movieData = await MovieService.getMovieById(parseInt(id));
 
@@ -57,8 +54,6 @@ export default function MovieDetailPage() {
         }
       } catch {
         setError("An error occurred while loading the movie");
-      } finally {
-        setLoading(false);
       }
     };
     fetchMovie();
@@ -158,25 +153,24 @@ export default function MovieDetailPage() {
     }
   };
 
-  if (loading) {
+  // Show transition loading while movie is loading
+  if (!movie) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-xl text-gray-600">Loading movie...</p>
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+          <span className="text-gray-600">Loading...</span>
         </div>
       </div>
     );
   }
 
-  if (error || !movie) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="text-6xl mb-4">🎬</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {error || "Movie not found"}
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">{error}</h2>
           <p className="text-gray-600 mb-6">
             The movie you're looking for could not be found or an error
             occurred.
@@ -201,10 +195,10 @@ export default function MovieDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 page-transition">
       {/* Movie Content */}
       <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 md:py-8">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden list-transition">
           {/* Centered Layout - Same for all screen sizes */}
           <div className="flex flex-col items-center space-y-8 p-4 md:p-8 lg:p-12">
             {/* Poster Section - Always Centered */}
@@ -274,12 +268,12 @@ export default function MovieDetailPage() {
                     ) : null;
                   })()}
                   {movie.spoken_languages &&
-                    Array.isArray(movie.spoken_languages) &&
-                    movie.spoken_languages.length > 0 && (
+                    typeof movie.spoken_languages === "string" &&
+                    movie.spoken_languages.trim().length > 0 && (
                       <div className="flex items-center gap-2 bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2 rounded-full">
                         <span className="text-indigo-600">🗣️</span>
                         <span className="text-gray-800 font-medium">
-                          {movie.spoken_languages[0]}
+                          {movie.spoken_languages}
                         </span>
                       </div>
                     )}
@@ -362,23 +356,11 @@ export default function MovieDetailPage() {
                         : "bg-white border-2 border-red-600 text-red-600 hover:bg-red-50"
                     }`}
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill={isFavorite ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
+                    <span className="text-xl">❤️</span>
                     {user
                       ? isFavorite
-                        ? "❤️ Favorited"
-                        : "🤍 Add to Favorites"
+                        ? "Favorited"
+                        : "Add to Favorites"
                       : "Login for Favorites"}
                   </button>
 
@@ -392,23 +374,11 @@ export default function MovieDetailPage() {
                         : "bg-white border-2 border-green-600 text-green-600 hover:bg-green-50"
                     }`}
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                    <span className="text-xl">✅</span>
                     {user
                       ? isWatched
-                        ? "✅ Watched"
-                        : "👁️ Mark as Watched"
+                        ? "Watched"
+                        : "Mark as Watched"
                       : "Login for Watched"}
                   </button>
 
@@ -422,23 +392,11 @@ export default function MovieDetailPage() {
                         : "bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
                     }`}
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
+                    <span className="text-xl">⏰</span>
                     {user
                       ? isInWishlist
-                        ? "📝 In Wishlist"
-                        : "⏰ Add to Wishlist"
+                        ? "In Wishlist"
+                        : "Add to Wishlist"
                       : "Login for Wishlist"}
                   </button>
                 </div>

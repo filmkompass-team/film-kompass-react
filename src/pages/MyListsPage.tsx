@@ -16,6 +16,7 @@ export default function MyListsPage() {
   const [activeList, setActiveList] = useState<
     "favorites" | "watched" | "wishlist"
   >("favorites");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
@@ -41,6 +42,16 @@ export default function MyListsPage() {
     checkUser();
   }, [navigate]);
 
+  // Sync activeList with URL parameter
+  useEffect(() => {
+    if (listType && listType !== activeList) {
+      setActiveList(listType as "favorites" | "watched" | "wishlist");
+    } else if (!listType) {
+      // If no listType in URL, redirect to favorites
+      navigate("/my-lists/favorites", { replace: true });
+    }
+  }, [listType, activeList, navigate]);
+
   useEffect(() => {
     const fetchMoviesFromList = async () => {
       console.log("MyListsPage - fetchMoviesFromList called with:", {
@@ -54,7 +65,12 @@ export default function MyListsPage() {
       }
       const currentListType = listType || activeList;
       try {
-        setLoading(isInitialLoad.current);
+        // Only show loading spinner on initial load, use transition for subsequent changes
+        if (isInitialLoad.current) {
+          setLoading(true);
+        } else {
+          setIsTransitioning(true);
+        }
         setError(null);
         console.log(
           "MyListsPage - Starting to fetch movies from list:",
@@ -72,6 +88,7 @@ export default function MyListsPage() {
           console.log("MyListsPage - No movies in list");
           setMovies([]);
           setLoading(false);
+          setIsTransitioning(false);
           return;
         }
 
@@ -98,6 +115,7 @@ export default function MyListsPage() {
       } finally {
         isInitialLoad.current = false;
         setLoading(false);
+        setIsTransitioning(false);
       }
     };
 
@@ -121,7 +139,8 @@ export default function MyListsPage() {
   };
 
   const getListDescription = () => {
-    switch (listType) {
+    const currentListType = listType || activeList;
+    switch (currentListType) {
       case "favorites":
         return "Movies you've marked as favorites";
       case "watched":
@@ -132,6 +151,7 @@ export default function MyListsPage() {
         return "Your personal movie lists";
     }
   };
+
 
   if (loading) {
     return (
@@ -163,54 +183,30 @@ export default function MyListsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 page-transition">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 list-transition">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             {getListTitle()}
           </h1>
           <p className="text-xl text-gray-600">{getListDescription()}</p>
 
-          {!listType && (
-            <div className="flex space-x-4 mt-4">
-              <button
-                onClick={() => setActiveList("favorites")}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeList === "favorites"
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                ♥️ Favorites
-              </button>
-              <button
-                onClick={() => setActiveList("watched")}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeList === "watched"
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                ✅ Watched
-              </button>
-              <button
-                onClick={() => setActiveList("wishlist")}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeList === "wishlist"
-                    ? "bg-purple-600 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                📝 Wishlist
-              </button>
-            </div>
-          )}
         </div>
 
+        {/* Transition Loading Indicator */}
+        {isTransitioning && (
+          <div className="flex justify-center items-center py-8">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              <span className="text-gray-600">Loading...</span>
+            </div>
+          </div>
+        )}
+
         {/* Movies Grid */}
-        {movies.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {!isTransitioning && movies.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-all duration-300 grid-transition">
             {movies.map((movie) => (
               <MovieCard
                 key={movie.tmdb_id}
@@ -219,28 +215,28 @@ export default function MyListsPage() {
               />
             ))}
           </div>
-        ) : (
-          <div className="text-center py-12">
+        ) : !isTransitioning && movies.length === 0 ? (
+          <div className="text-center py-12 transition-all duration-300 list-transition">
             <div className="text-6xl mb-4">
-              {listType || (activeList === "favorites" && "❤️")}
-              {listType || (activeList === "watched" && "✅")}
-              {listType || (activeList === "wishlist" && "📝")}
+              {(listType || activeList) === "favorites" && "❤️"}
+              {(listType || activeList) === "watched" && "✅"}
+              {(listType || activeList) === "wishlist" && "📝"}
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No movies in your {activeList || listType} list yet
+              No movies in your {listType || activeList} list yet
             </h3>
             <p className="text-gray-600 mb-6">
-              Start adding movies to your {activeList || listType} list by
+              Start adding movies to your {listType || activeList} list by
               browsing our collection.
             </p>
             <button
               onClick={() => navigate("/movies")}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 font-medium transform hover:scale-105"
             >
               Browse Movies
             </button>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -1,107 +1,165 @@
-import moviesData from '../data/movies.json';
+import supabase from '../utils/supabase';
 import type { Movie, MovieFilters, PaginationInfo } from '../types/movie';
 
 export class MovieService {
-  static getMovies(
+  static async getMovies(
     page: number = 1,
     itemsPerPage: number = 20,
     filters?: MovieFilters
-  ): { movies: Movie[]; pagination: PaginationInfo } {
-    let filteredMovies = [...(moviesData as Movie[])];
+  ): Promise<{ movies: Movie[]; pagination: PaginationInfo }> {
+    try {
+      let query = supabase
+        .from('films')
+        .select('*', { count: 'exact' });
 
-    // Apply filters
-    if (filters?.search) {
-      const searchLower = filters.search.toLowerCase();
-      filteredMovies = filteredMovies.filter(movie =>
-        movie.title && typeof movie.title === 'string' && movie.title.toLowerCase().includes(searchLower)
-      );
-    }
-
-    if (filters?.genre) {
-      filteredMovies = filteredMovies.filter(movie =>
-        movie.genres && Array.isArray(movie.genres) && movie.genres.includes(filters.genre!)
-      );
-    }
-
-    if (filters?.year) {
-      filteredMovies = filteredMovies.filter(movie => {
-        if (!movie.release_date) return false;
-        const movieYear = new Date(movie.release_date).getFullYear();
-        return movieYear === filters.year;
-      });
-    }
-
-
-    // Sort by vote count (descending)
-    filteredMovies.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
-
-    // Apply pagination
-    const totalItems = filteredMovies.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedMovies = filteredMovies.slice(startIndex, endIndex);
-
-    const pagination: PaginationInfo = {
-      currentPage: page,
-      totalPages,
-      totalItems,
-      itemsPerPage,
-    };
-
-    return {
-      movies: paginatedMovies,
-      pagination,
-    };
-  }
-
-  static getMovieById(tmdbId: number): Movie | null {
-    const movie = (moviesData as any[]).find((m: any) => m.tmdb_id === tmdbId);
-    return movie as Movie || null;
-  }
-
-  static getGenres(): string[] {
-    const allGenres = new Set<string>();
-    
-    (moviesData as any[]).forEach((movie: any) => {
-      if (movie.genres && Array.isArray(movie.genres)) {
-        movie.genres.forEach((genre: string) => allGenres.add(genre));
+      // Apply filters
+      if (filters?.search) {
+        query = query.ilike('title', `%${filters.search}%`);
       }
-    });
 
-    return Array.from(allGenres).sort();
+      if (filters?.genre) {
+        query = query.contains('genres', [filters.genre]);
+      }
+
+      if (filters?.year) {
+        const startDate = `${filters.year}-01-01`;
+        const endDate = `${filters.year}-12-31`;
+        query = query.gte('release_date', startDate).lte('release_date', endDate);
+      }
+
+      // Apply pagination
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      query = query
+        .order('vote_count', { ascending: false })
+        .range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      const totalItems = count || 0;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+      const pagination: PaginationInfo = {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        itemsPerPage,
+      };
+
+      return {
+        movies: data as Movie[] || [],
+        pagination,
+      };
+    } catch (error) {
+      console.error('Error fetching movies:', error);
+      throw error;
+    }
   }
 
-  static getReleaseYears(): number[] {
-    const years = new Set<number>();
-    
-    (moviesData as any[]).forEach((movie: any) => {
-      if (movie.release_date) {
-        const year = new Date(movie.release_date).getFullYear();
-        if (year > 1900) { // Filter out invalid dates
-          years.add(year);
+  static async getMovieById(tmdbId: number): Promise<Movie | null> {
+    try {
+      const { data, error } = await supabase
+        .from('films')
+        .select('*')
+        .eq('tmdb_id', tmdbId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null; // No rows found
         }
+        throw error;
       }
-    });
 
-    return Array.from(years).sort((a, b) => b - a); // Sort descending
+      return data as Movie;
+    } catch (error) {
+      console.error('Error fetching movie by ID:', error);
+      return null;
+    }
   }
 
-  static getFeaturedMovies(): Movie[] {
-    const featuredTitles = [
-      'The Shawshank Redemption',
-      'The Matrix',
-      'Interstellar',
-      'The Lion King',
-      'The Godfather',
-      'Parasite'
-    ];
+  static async getGenres(): Promise<string[]> {
+    try {
+      const { data, error } = await supabase
+        .from('films')
+        .select('genres')
+        .not('genres', 'is', null);
 
-    // Find movies by title
-    const featuredMovies = featuredTitles
-      .map(title => (moviesData as any[]).find((movie: any) => movie.title === title))
-      .filter(movie => movie !== undefined) as Movie[];
+      if (error) {
+        throw error;
+      }
 
-    return featuredMovies;
+      const allGenres = new Set<string>();
+      data.forEach((movie: any) => {
+        if (movie.genres && Array.isArray(movie.genres)) {
+          movie.genres.forEach((genre: string) => allGenres.add(genre));
+        }
+      });
+
+      return Array.from(allGenres).sort();
+    } catch (error) {
+      console.error('Error fetching genres:', error);
+      return [];
+    }
+  }
+
+  static async getReleaseYears(): Promise<number[]> {
+    try {
+      const { data, error } = await supabase
+        .from('films')
+        .select('release_date')
+        .not('release_date', 'is', null);
+
+      if (error) {
+        throw error;
+      }
+
+      const years = new Set<number>();
+      data.forEach((movie: any) => {
+        if (movie.release_date) {
+          const year = new Date(movie.release_date).getFullYear();
+          if (year > 1900) { // Filter out invalid dates
+            years.add(year);
+          }
+        }
+      });
+
+      return Array.from(years).sort((a, b) => b - a); // Sort descending
+    } catch (error) {
+      console.error('Error fetching release years:', error);
+      return [];
+    }
+  }
+
+  static async getFeaturedMovies(): Promise<Movie[]> {
+    try {
+      const featuredTitles = [
+        'The Shawshank Redemption',
+        'The Matrix',
+        'Interstellar',
+        'The Lion King',
+        'The Godfather',
+        'Parasite'
+      ];
+
+      const { data, error } = await supabase
+        .from('films')
+        .select('*')
+        .in('title', featuredTitles);
+
+      if (error) {
+        throw error;
+      }
+
+      return data as Movie[] || [];
+    } catch (error) {
+      console.error('Error fetching featured movies:', error);
+      return [];
+    }
   }
 }

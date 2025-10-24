@@ -30,8 +30,9 @@ export default function Navbar() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (showDropdown) {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showDropdown && !target.closest(".dropdown-container")) {
         setShowDropdown(false);
       }
     };
@@ -94,13 +95,12 @@ export default function Navbar() {
                   Welcome, {user.email?.split("@")[0]}
                 </span>
                 {/* My Lists Dropdown */}
-                <div className="relative group">
+                <div className="relative dropdown-container">
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowDropdown(!showDropdown);
-                      if (!showDropdown) {
-                        navigate("/my-lists");
-                      }
                     }}
                     className="px-3 py-2 sm:px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium cursor-pointer flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
                   >
@@ -119,7 +119,9 @@ export default function Navbar() {
                     </svg>
                     <span className="hidden sm:inline">My Lists</span>
                     <svg
-                      className="w-4 h-4"
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        showDropdown ? "rotate-180" : ""
+                      }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -135,11 +137,14 @@ export default function Navbar() {
 
                   {/* Dropdown Menu */}
                   {showDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
+                    <div
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Link
                         to="/my-lists/favorites"
                         onClick={() => setShowDropdown(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors duration-200 flex items-center gap-2"
                       >
                         <span>❤️</span>
                         Favorites
@@ -147,7 +152,7 @@ export default function Navbar() {
                       <Link
                         to="/my-lists/watched"
                         onClick={() => setShowDropdown(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors duration-200 flex items-center gap-2"
                       >
                         <span>✅</span>
                         Watched
@@ -155,7 +160,7 @@ export default function Navbar() {
                       <Link
                         to="/my-lists/wishlist"
                         onClick={() => setShowDropdown(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200 flex items-center gap-2"
                       >
                         <span>📝</span>
                         Wishlist
