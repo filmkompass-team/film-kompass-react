@@ -37,10 +37,15 @@ export default function Movies() {
   const [years, setYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const fetchMovies = async (page: number = 1) => {
+  const fetchMovies = async (page: number = 1, isInitialLoad: boolean = false) => {
     try {
-      setLoading(true);
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setIsTransitioning(true);
+      }
       setError(null);
       const result = await MovieService.getMovies(page, 20, filters);
       setMovies(result.movies);
@@ -49,6 +54,7 @@ export default function Movies() {
       setError("Failed to load movies. Please try again.");
     } finally {
       setLoading(false);
+      setIsTransitioning(false);
     }
   };
 
@@ -61,6 +67,7 @@ export default function Movies() {
       setGenres(genresData);
       setYears(yearsData);
     } catch (err) {
+      console.error("Error fetching filters:", err);
       // Silently handle filter data errors
     }
   };
@@ -73,11 +80,16 @@ export default function Movies() {
     // Check if there's a page parameter in URL
     const pageParam = searchParams.get("page");
     const targetPage = pageParam ? parseInt(pageParam) : 1;
-    fetchMovies(targetPage);
+    fetchMovies(targetPage, true);
   }, [filters, searchParams]);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, []);
+
   const handlePageChange = (page: number) => {
-    fetchMovies(page);
+    fetchMovies(page, false);
     // Update URL with new page number while preserving current filters
     const params = new URLSearchParams();
     params.set("page", page.toString());
@@ -116,15 +128,15 @@ export default function Movies() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 page-transition">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Movies</h1>
           <p className="text-xl text-gray-600">
             Discover your next favorite film with AI-powered recommendations,
-            smart search, and filters. Browse our collection of 8,000+ movies or
-            describe what you want to watch in natural language.
+            smart search, and filters. Browse our collection of 80.000+ movies
+            or describe what you want to watch in natural language.
           </p>
         </div>
 
@@ -147,18 +159,20 @@ export default function Movies() {
           </div>
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            <span className="ml-3 text-gray-600">Loading movies...</span>
+        {/* Transition Loading Indicator */}
+        {isTransitioning && (
+          <div className="flex justify-center items-center py-8">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+              <span className="text-gray-600">Loading...</span>
+            </div>
           </div>
         )}
 
         {/* Movies Grid */}
-        {!loading && !error && (
+        {!error && !isTransitioning && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8 grid-transition">
               {movies.map((movie) => (
                 <MovieCard
                   key={movie.tmdb_id}
@@ -169,7 +183,7 @@ export default function Movies() {
             </div>
 
             {/* Empty State */}
-            {movies.length === 0 && (
+            {movies.length === 0 && !loading && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🎬</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">

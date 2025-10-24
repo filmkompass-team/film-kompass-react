@@ -28,7 +28,7 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1"
+      className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1 list-transition"
       onClick={() => onClick?.(movie)}
     >
       {/* Poster */}
@@ -94,7 +94,7 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
           {movie.overview || "No description available."}
         </p>
 
-        {/* Movie Details - Only show if there's valid data */}
+        {/* Movie Details - Only show runtime */}
         {(() => {
           const hasValidRuntime =
             movie.runtime !== null &&
@@ -103,12 +103,7 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
             typeof movie.runtime === "number" &&
             movie.runtime > 0;
 
-          const hasValidLanguages =
-            movie.spoken_languages &&
-            Array.isArray(movie.spoken_languages) &&
-            movie.spoken_languages.length > 0;
-
-          if (!hasValidRuntime && !hasValidLanguages) {
+          if (!hasValidRuntime) {
             return null;
           }
 
@@ -119,12 +114,6 @@ export default function MovieCard({ movie, onClick }: MovieCardProps) {
                   <span className="flex items-center gap-1">
                     <span>🕒</span>
                     <span>{formatRuntime(movie.runtime!)}</span>
-                  </span>
-                )}
-                {hasValidLanguages && (
-                  <span className="flex items-center gap-1">
-                    <span>🗣️</span>
-                    <span>{movie.spoken_languages![0]}</span>
                   </span>
                 )}
               </div>
