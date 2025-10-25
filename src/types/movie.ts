@@ -31,6 +31,7 @@ export interface MovieFilters {
   year?: number;
   search?: string;
   aiRecommendation?: string;
+  kidsOnly?: boolean;
 }
 
 export interface PaginationInfo {

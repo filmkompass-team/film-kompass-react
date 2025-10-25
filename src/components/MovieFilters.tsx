@@ -17,7 +17,7 @@ export default function MovieFilters({
 }: MovieFiltersProps) {
   const handleFilterChange = (
     key: keyof FilterType,
-    value: string | number | undefined
+    value: string | number | undefined | boolean
   ) => {
     onFiltersChange({
       ...filters,
@@ -145,6 +145,31 @@ export default function MovieFilters({
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      {/* Kids Filter - Grid'in DIŞINDA */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-gray-700 flex items-center">
+              <span className="mr-2">🎬</span>
+              Kids Movies Only
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Show only child-friendly movies
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filters.kidsOnly || false}
+              onChange={(e) => handleFilterChange("kidsOnly", e.target.checked)}
+              className="sr-only peer"
+              disabled={isLoading}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
         </div>
       </div>
     </div>

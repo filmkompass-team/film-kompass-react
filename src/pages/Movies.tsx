@@ -26,11 +26,12 @@ export default function Movies() {
     const search = searchParams.get("search");
     const genre = searchParams.get("genre");
     const year = searchParams.get("year");
+    const kidsOnly = searchParams.get("kidsOnly");
 
     if (search) urlFilters.search = search;
     if (genre) urlFilters.genre = genre;
     if (year) urlFilters.year = parseInt(year);
-
+    if (kidsOnly === "true") urlFilters.kidsOnly = true;
     return urlFilters;
   });
   const [genres, setGenres] = useState<string[]>([]);
@@ -39,7 +40,10 @@ export default function Movies() {
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const fetchMovies = async (page: number = 1, isInitialLoad: boolean = false) => {
+  const fetchMovies = async (
+    page: number = 1,
+    isInitialLoad: boolean = false
+  ) => {
     try {
       if (isInitialLoad) {
         setLoading(true);
@@ -50,7 +54,8 @@ export default function Movies() {
       const result = await MovieService.getMovies(page, 20, filters);
       setMovies(result.movies);
       setPagination(result.pagination);
-    } catch (err) {
+    } catch (error) {
+      console.error("Error fetching movies:", error);
       setError("Failed to load movies. Please try again.");
     } finally {
       setLoading(false);
@@ -96,6 +101,7 @@ export default function Movies() {
     if (filters.search) params.set("search", filters.search);
     if (filters.genre) params.set("genre", filters.genre);
     if (filters.year) params.set("year", filters.year.toString());
+    if (filters.kidsOnly) params.set("kidsOnly", "true");
 
     navigate(`/movies?${params.toString()}`, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -109,7 +115,7 @@ export default function Movies() {
     if (newFilters.search) params.set("search", newFilters.search);
     if (newFilters.genre) params.set("genre", newFilters.genre);
     if (newFilters.year) params.set("year", newFilters.year.toString());
-
+    if (newFilters.kidsOnly) params.set("kidsOnly", "true");
     // Reset to page 1 when filters change
     params.set("page", "1");
 
@@ -123,7 +129,7 @@ export default function Movies() {
     if (filters.search) params.set("search", filters.search);
     if (filters.genre) params.set("genre", filters.genre);
     if (filters.year) params.set("year", filters.year.toString());
-
+    if (filters.kidsOnly) params.set("kidsOnly", "true");
     navigate(`/movie/${movie.tmdb_id}?${params.toString()}`);
   };
 
