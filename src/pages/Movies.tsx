@@ -155,6 +155,16 @@ export default function Movies() {
           isLoading={loading}
         />
 
+        {/* Mini Anket Butonu */}
+        <div className="flex justify-end mb-4">
+          <button
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => navigate("/survey")}
+          >
+            🎯 Take the Mini Survey
+          </button>
+        </div>
+
         {/* Error State */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
