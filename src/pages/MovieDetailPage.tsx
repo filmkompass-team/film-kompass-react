@@ -4,6 +4,8 @@ import type { Movie } from "../types/movie";
 import { MovieService } from "../services/movieService";
 import { UserListService } from "../services/userListService";
 import supabase from "../utils/supabase";
+import { RatingService } from "../services/ratingService";
+import RatingComponent from "../components/Rating";
 
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +18,8 @@ export default function MovieDetailPage() {
   const [isWatched, setIsWatched] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [listLoading, setListLoading] = useState(false);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(true);
 
   // Get the page number and filters from URL params
   const pageParam = searchParams.get("page");
@@ -59,10 +63,34 @@ export default function MovieDetailPage() {
     fetchMovie();
   }, [id]);
 
-  // Check movie list status when movie and user are available
+  // Check movie list and rating status when movie and user are available
   useEffect(() => {
     if (movie && user) {
-      checkMovieListStatus(movie.tmdb_id);
+      const checkStatusAndRating = async () => {
+        try {
+          // Listeleri ve puanı paralel olarak çek
+          const [favorite, watched, wishlist, rating] = await Promise.all([
+            UserListService.checkMovieInList(movie.tmdb_id, "favorites"),
+            UserListService.checkMovieInList(movie.tmdb_id, "watched"),
+            UserListService.checkMovieInList(movie.tmdb_id, "wishlist"),
+            RatingService.getUserRatingForMovie(movie.tmdb_id) // PUANI ÇEK
+          ]);
+
+          setIsFavorite(favorite);
+          setIsWatched(watched);
+          setIsInWishlist(wishlist);
+          setUserRating(rating); // PUAN STATE'İNİ AYARLA
+
+        } catch (error) {
+          console.error("Error checking movie status or rating:", error);
+        } finally {
+          setRatingLoading(false); // Puan yüklemesi bitti
+        }
+      };
+      checkStatusAndRating();
+    } else if (!user) {
+        // Kullanıcı giriş yapmadıysa puan yüklemesini bitir
+        setRatingLoading(false);
     }
   }, [movie, user]);
 
@@ -86,21 +114,7 @@ export default function MovieDetailPage() {
     return "bg-red-500";
   };
 
-  const checkMovieListStatus = async (movieId: number) => {
-    try {
-      const [favorite, watched, wishlist] = await Promise.all([
-        UserListService.checkMovieInList(movieId, "favorites"),
-        UserListService.checkMovieInList(movieId, "watched"),
-        UserListService.checkMovieInList(movieId, "wishlist"),
-      ]);
-
-      setIsFavorite(favorite);
-      setIsWatched(watched);
-      setIsInWishlist(wishlist);
-    } catch (error) {
-      console.error("Error checking movie list status:", error);
-    }
-  };
+  
 
   const handleListAction = async (
     listType: "favorites" | "watched" | "wishlist"
@@ -150,6 +164,21 @@ export default function MovieDetailPage() {
       );
     } finally {
       setListLoading(false);
+    }
+  };
+
+  const handleRatingSubmit = async (movieId: number, rating: number): Promise<void> => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    try {
+      await RatingService.submitRating(movieId, rating);
+      setUserRating(rating); // UI'ı hemen güncelle
+    } catch (error) {
+      alert("Puanınız kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
+      // Hata durumunda UI'ı eski haline getirmek gerekebilir, ama component kendi içinde bunu yönetiyor.
+      throw error; // Hatanın RatingComponent tarafından yakalanması için tekrar fırlat
     }
   };
 
@@ -312,6 +341,14 @@ export default function MovieDetailPage() {
                     </div>
                   </div>
                 )}
+                {/* Rating Buttons */}
+              {user && !ratingLoading && (
+                  <RatingComponent
+                      movieId={movie.tmdb_id}
+                      initialRating={userRating}
+                      onRatingSubmit={handleRatingSubmit}
+                  />
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-4">
