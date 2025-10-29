@@ -90,23 +90,13 @@ export class MovieService {
 
   static async getGenres(): Promise<string[]> {
     try {
-      const { data, error } = await supabase
-        .from("films")
-        .select("genres")
-        .not("genres", "is", null);
+      const { data, error } = await supabase.rpc("get_unique_genres");
 
       if (error) {
         throw error;
       }
 
-      const allGenres = new Set<string>();
-      data.forEach((movie: any) => {
-        if (movie.genres && Array.isArray(movie.genres)) {
-          movie.genres.forEach((genre: string) => allGenres.add(genre));
-        }
-      });
-
-      return Array.from(allGenres).sort();
+      return data.map((row: any) => row.genre);
     } catch (error) {
       console.error("Error fetching genres:", error);
       return [];
@@ -115,27 +105,13 @@ export class MovieService {
 
   static async getReleaseYears(): Promise<number[]> {
     try {
-      const { data, error } = await supabase
-        .from("films")
-        .select("release_date")
-        .not("release_date", "is", null);
+      const { data, error } = await supabase.rpc("get_unique_years");
 
       if (error) {
         throw error;
       }
 
-      const years = new Set<number>();
-      data.forEach((movie: any) => {
-        if (movie.release_date) {
-          const year = new Date(movie.release_date).getFullYear();
-          if (year > 1900) {
-            // Filter out invalid dates
-            years.add(year);
-          }
-        }
-      });
-
-      return Array.from(years).sort((a, b) => b - a); // Sort descending
+      return data.map((row: any) => row.year);
     } catch (error) {
       console.error("Error fetching release years:", error);
       return [];
