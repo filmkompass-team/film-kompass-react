@@ -93,17 +93,17 @@ export class MovieService {
     try {
       const { data, error } = await supabase
         .from("genres_view") 
-        .select("name") 
-        .order("name", { ascending: true }); 
+        .select("genre") 
+        .order("genre", { ascending: true }); 
 
       if (error) {
         throw error;
       }
 
-      return data.map((genre: any) => genre.name); 
+      return data.map((row: any) => row.genre); 
 
     } catch (error) {
-      console.error("Error fetching genres from view:", error);
+      console.error("Error fetching genres:", error);
       return [];
     }
   }
