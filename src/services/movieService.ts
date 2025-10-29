@@ -2,6 +2,7 @@ import supabase from "../utils/supabase";
 import type { Movie, MovieFilters, PaginationInfo } from "../types/movie";
 
 export class MovieService {
+
   static async getMovies(
     page: number = 1,
     itemsPerPage: number = 20,
@@ -90,23 +91,29 @@ export class MovieService {
 
   static async getGenres(): Promise<string[]> {
     try {
-      const { data, error } = await supabase.rpc("get_unique_genres");
+      const { data, error } = await supabase
+        .from("genres_view") 
+        .select("name") 
+        .order("name", { ascending: true }); 
 
       if (error) {
         throw error;
       }
 
-      return data.map((row: any) => row.genre);
+      return data.map((genre: any) => genre.name); 
+
     } catch (error) {
-      console.error("Error fetching genres:", error);
+      console.error("Error fetching genres from view:", error);
       return [];
     }
   }
 
   static async getReleaseYears(): Promise<number[]> {
     try {
-      const { data, error } = await supabase.rpc("get_unique_years");
-
+      const { data, error } = await supabase
+        .from("years_view")
+        .select("year")
+        .order("year", { ascending: false });
       if (error) {
         throw error;
       }
@@ -118,30 +125,4 @@ export class MovieService {
     }
   }
 
-  static async getFeaturedMovies(): Promise<Movie[]> {
-    try {
-      const featuredTitles = [
-        "The Shawshank Redemption",
-        "The Matrix",
-        "Interstellar",
-        "The Lion King",
-        "The Godfather",
-        "Parasite",
-      ];
-
-      const { data, error } = await supabase
-        .from("films")
-        .select("*")
-        .in("title", featuredTitles);
-
-      if (error) {
-        throw error;
-      }
-
-      return (data as Movie[]) || [];
-    } catch (error) {
-      console.error("Error fetching featured movies:", error);
-      return [];
-    }
-  }
 }
