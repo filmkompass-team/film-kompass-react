@@ -176,8 +176,7 @@ export default function MovieDetailPage() {
       await RatingService.submitRating(movieId, rating);
       setUserRating(rating); // UI'ı hemen güncelle
     } catch (error) {
-      alert("Puanınız kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.");
-      // Hata durumunda UI'ı eski haline getirmek gerekebilir, ama component kendi içinde bunu yönetiyor.
+      alert("There was an error saving your vote. Please try again.");
       throw error; // Hatanın RatingComponent tarafından yakalanması için tekrar fırlat
     }
   };
