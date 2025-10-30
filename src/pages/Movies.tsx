@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type {
   Movie,
@@ -40,7 +40,7 @@ export default function Movies() {
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const fetchMovies = async (
+  const fetchMovies = useCallback(async (
     page: number = 1,
     isInitialLoad: boolean = false
   ) => {
@@ -61,7 +61,7 @@ export default function Movies() {
       setLoading(false);
       setIsTransitioning(false);
     }
-  };
+  }, [filters]);
 
   const fetchFilters = async () => {
     try {
@@ -86,7 +86,7 @@ export default function Movies() {
     const pageParam = searchParams.get("page");
     const targetPage = pageParam ? parseInt(pageParam) : 1;
     fetchMovies(targetPage, true);
-  }, [filters, searchParams]);
+  }, [filters, searchParams, fetchMovies]);
 
   // Scroll to top when component mounts
   useEffect(() => {
