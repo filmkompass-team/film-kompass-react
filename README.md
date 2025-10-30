@@ -1,6 +1,6 @@
 # Film Compass
 
-A modern movie discovery app built with React, TypeScript, and TailwindCSS. Features AI-powered recommendations, smart search, and filtering for a collection of 8,000+ movies.
+A modern movie discovery app built with React, TypeScript, and TailwindCSS. Features AI-powered recommendations, smart search, and filtering for a collection of 80.000+ movies.
 
 ## Contributing
 
@@ -18,7 +18,7 @@ This project is in active development. Feel free to:
 - **Backend**: Supabase (authentication, database)
 - **AI/ML**: Python (film recommendations)
 - **Build Tool**: Vite
-- **Data**: Static JSON (8,000+ movies from TMDB)
+- **Data**: 80.000+ movies from TMDB
 
 ## Project Structure
 
@@ -29,7 +29,6 @@ src/
 ├── services/      # API services
 ├── types/         # TypeScript definitions
 ├── utils/         # Utility functions
-└── data/          # Static movie data
 ```
 
 ## Features (WIP)
@@ -55,7 +54,7 @@ src/
 
 2. **Environment Setup**
 
-This project uses environment variables for configuration.  
+This project uses environment variables for configuration.
 To set up your local environment, follow these steps carefully:
 
 Duplicate the `.env.example` file included in the repository and rename it to `.env`:

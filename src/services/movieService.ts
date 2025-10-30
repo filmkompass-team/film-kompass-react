@@ -9,15 +9,15 @@ export class MovieService {
     filters?: MovieFilters
   ): Promise<{ movies: Movie[]; pagination: PaginationInfo }> {
     try {
-      let query = supabase.from("films").select("*", { count: "exact" });
+      let query = supabase
+        .from("films_sorted")
+        .select("*", { count: "exact" });
 
-      // Apply filters
-      if (filters?.search) {
-        query = query.ilike("title", `%${filters.search}%`);
-      }
-
-      if (filters?.genre) {
-        query = query.contains("genres", [filters.genre]);
+      if (filters?.kidsOnly) {
+        query = query.eq("adult", false);
+        query = query.or(
+          "genres.cs.{Children},genres.cs.{Animation},genres.cs.{Family}"
+        );
       }
 
       if (filters?.year) {
@@ -28,18 +28,22 @@ export class MovieService {
           .lte("release_date", endDate);
       }
 
-      if (filters?.kidsOnly) {
-        query = query.eq("adult", false);
-        query = query.or(
-          "genres.cs.{Children},genres.cs.{Animation},genres.cs.{Family}"
-        );
+      if (filters?.genre) {
+        query = query.contains("genres", [filters.genre]);
       }
 
-      // Apply pagination
+      if (filters?.search) {
+        const searchTerm = filters.search.trim();
+        if (searchTerm.length > 0) {
+          query = query.ilike("title", `%${searchTerm}%`);
+        }
+      }
+
+      // Pagination
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
-      query = query.order("vote_count", { ascending: false }).range(from, to);
+      query = query.range(from, to);
 
       const { data, error, count } = await query;
 
@@ -92,15 +96,15 @@ export class MovieService {
   static async getGenres(): Promise<string[]> {
     try {
       const { data, error } = await supabase
-        .from("genres_view") 
-        .select("genre") 
-        .order("genre", { ascending: true }); 
+        .from("genres_view")
+        .select("genre")
+        .order("genre", { ascending: true });
 
       if (error) {
         throw error;
       }
 
-      return data.map((row: any) => row.genre); 
+      return data.map((row: { genre: string }) => row.genre);
 
     } catch (error) {
       console.error("Error fetching genres:", error);
@@ -118,7 +122,7 @@ export class MovieService {
         throw error;
       }
 
-      return data.map((row: any) => row.year);
+      return data.map((row: { year: number }) => row.year);
     } catch (error) {
       console.error("Error fetching release years:", error);
       return [];
