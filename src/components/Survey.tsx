@@ -31,13 +31,13 @@ const GENRES = [
   
 ];
 
-export default function Survey({ initial, onSubmit }: Props) {
+export default function Survey({ onSubmit }: Props) {
   const [answers, setAnswers] = useState<SurveyAnswers>({
-    genres: initial?.genres ?? [],
-    year: initial?.year,
-    duration: initial?.duration,
-    popularity: initial?.popularity,
-    region: initial?.region,
+    genres: [],
+    year: undefined,
+    duration: undefined,
+    popularity: undefined,
+    region: undefined,
   });
 
 // Submit Kontrolü
@@ -57,6 +57,7 @@ export default function Survey({ initial, onSubmit }: Props) {
       return;
     }
 
+    onSubmit(answers);
     // ✔ Valid → AI önerilerine gönder
     console.log("All good!", answers);
   };
@@ -113,7 +114,7 @@ export default function Survey({ initial, onSubmit }: Props) {
           <option value="2000s">2000-2019</option>
           <option value="80s_90s">80-90s</option>
           <option value="classic">Classic</option>
-          <option value="">No Preference</option>
+          <option value="any">No Preference</option>
         </select>
       </div>
 
@@ -134,7 +135,7 @@ export default function Survey({ initial, onSubmit }: Props) {
           <option value="short">⏱️ &lt; 90 min</option>
           <option value="medium">🎬 90–120 min</option>
           <option value="long">🕓 120+ min</option>
-          <option value="">No Preference</option>
+          <option value="any">No Preference</option>
         </select>
       </div>
 
@@ -154,7 +155,7 @@ export default function Survey({ initial, onSubmit }: Props) {
 
           <option value="high">⭐ Popular & high-rated films</option>
           <option value="low">🔍 Underrated / lesser-known films</option>
-          <option value="">⚖️ No preference (mixed)</option>
+          <option value="any">⚖️ No preference (mixed)</option>
         </select>
       </div>
 
@@ -176,15 +177,15 @@ export default function Survey({ initial, onSubmit }: Props) {
             <option value="Europe">Europe</option>
             <option value="Asia">Asia</option>
             <option value="World Cinema">World Cinema</option>
-            <option value="">No Preference</option>        
+            <option value="any">No Preference</option>        
             </select>
       </div>
 
       <button
         className="bg-blue-600 text-white px-4 py-2 rounded-md"
         onClick={handleSubmit}
-        disabled={answers.genres.length === 0}
-        title={answers.genres.length === 0 ? "En az bir tür seçmelisin" : "Gönder"}
+        //disabled={answers.genres.length === 0}
+        //title={answers.genres.length === 0 ? "En az bir tür seçmelisin" : "Gönder"}
       >
         Get Recommendations
       </button>

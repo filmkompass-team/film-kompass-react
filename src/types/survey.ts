@@ -1,12 +1,11 @@
-export type Mood = "happy" | "sad" | "calm" | "romantic" | "excited";
-export type DurationPref = "short" | "medium" | "long";
-export type Region = "USA" | "Europe" | "Asia" | "World Cinema";
+export type DurationPref = "short" | "medium" | "long" | "any";
+export type Region = "USA" | "Europe" | "Asia" | "World Cinema" | "any";
 export type Year = "2020s" | "2000s" | "80s_90s" | "classic" | "any";
+export type Popularity = "high" | "low" | "any";
 export interface SurveyAnswers {
   genres: string[];       // ['action','drama',...]
-  mood?: Mood;
   duration?: DurationPref;
-  company?: "solo" | "partner" | "family" | "friends";
   region?: Region;
   year?: Year;
+  popularity?: Popularity;
 }

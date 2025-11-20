@@ -11,7 +11,7 @@ export default function SurveyPage() {
   const handleSubmit = (answers: SurveyAnswers) => {
     saveSurvey(answers);
     // Şimdilik Movies sayfasına yönlendiriyoruz;
-    // İstersen burada API çağırıp önerileri bu sayfada da listeleyebilirsin.
+    // Burada API çağırıp önerileri bu sayfada da listeleyebiliriz.
     navigate("/movies");
   };
 
@@ -19,7 +19,7 @@ export default function SurveyPage() {
     <div className="max-w-3xl mx-auto p-4">
       <Survey initial={initial} onSubmit={handleSubmit} />
       <p className="text-sm text-gray-500 mt-4">
-        Not: Cevapların kaydedildi. Movies sayfasında filtreleri buna göre önceden doldurabiliriz.
+        Note: Answers have been saved.
       </p>
     </div>
   );
