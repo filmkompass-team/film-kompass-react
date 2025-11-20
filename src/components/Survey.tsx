@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SurveyAnswers, DurationPref, Mood } from "../types/survey";
+import type { SurveyAnswers, DurationPref, Year } from "../types/survey";
 
 type Props = {
   initial?: Partial<SurveyAnswers>;
@@ -34,11 +34,36 @@ const GENRES = [
 export default function Survey({ initial, onSubmit }: Props) {
   const [answers, setAnswers] = useState<SurveyAnswers>({
     genres: initial?.genres ?? [],
-    mood: initial?.mood,
+    year: initial?.year,
     duration: initial?.duration,
-    company: initial?.company,
+    popularity: initial?.popularity,
     region: initial?.region,
   });
+
+// Submit Kontrolü
+  const validateSurvey = (a: SurveyAnswers) => {
+    return (
+      a.genres.length > 0 &&
+      a.year &&
+      a.duration &&
+      a.popularity &&
+      a.region
+    );
+  };
+
+  const handleSubmit = () => {
+    if (!validateSurvey(answers)) {
+      alert("Please answer all questions before continuing.");
+      return;
+    }
+
+    // ✔ Valid → AI önerilerine gönder
+    console.log("All good!", answers);
+  };
+
+
+
+
 
   const toggleGenre = (g: string) => {
     setAnswers((prev) => ({
@@ -70,22 +95,25 @@ export default function Survey({ initial, onSubmit }: Props) {
         </div>
       </div>
 
-      {/* Mood */}
+      {/* Years */}
       <div className="mb-4">
-        <p className="font-medium mb-2">2) What is your mood right now?</p>
+        <p className="font-medium mb-2">2) Film Era?</p>
         <select
           className="border rounded p-2 w-full"
-          value={answers.mood ?? ""}
+          value={answers.year ?? ""}
           onChange={(e) =>
-            setAnswers((p) => ({ ...p, mood: (e.target.value || undefined) as Mood }))
+            setAnswers((p) => ({ ...p, year: (e.target.value || undefined) as Year }))
           }
         >
-          <option value="">Seç...</option>
-          <option value="happy">Keyifli</option>
-          <option value="sad">Hüzünlü</option>
-          <option value="calm">Sakin</option>
-          <option value="romantic">Romantik</option>
-          <option value="excited">Heyecanlı</option>
+          <option value="" disabled hidden>
+          Select...
+          </option>
+
+          <option value="2020s">New (2020+)</option>
+          <option value="2000s">2000-2019</option>
+          <option value="80s_90s">80-90s</option>
+          <option value="classic">Classic</option>
+          <option value="">No Preference</option>
         </select>
       </div>
 
@@ -99,28 +127,34 @@ export default function Survey({ initial, onSubmit }: Props) {
             setAnswers((p) => ({ ...p, duration: (e.target.value || undefined) as DurationPref }))
           }
         >
-          <option value="">No Preference</option>
+          <option value="" disabled hidden>
+          Select...
+          </option>
+
           <option value="short">⏱️ &lt; 90 min</option>
           <option value="medium">🎬 90–120 min</option>
           <option value="long">🕓 120+ min</option>
+          <option value="">No Preference</option>
         </select>
       </div>
 
-      {/* Ortam */}
+      {/* Popülerlik */}
       <div className="mb-4">
-        <p className="font-medium mb-2">4) Kiminle izliyorsun?</p>
+        <p className="font-medium mb-2">4) Film popularity preference?</p>
         <select
           className="border rounded p-2 w-full"
-          value={answers.company ?? ""}
+          value={answers.popularity ?? ""}
           onChange={(e) =>
-            setAnswers((p) => ({ ...p, company: (e.target.value || undefined) as SurveyAnswers["company"] }))
+            setAnswers((p) => ({ ...p, popularity: (e.target.value || undefined) as SurveyAnswers["popularity"] }))
           }
         >
-          <option value="">Seç...</option>
-          <option value="solo">Tek başıma</option>
-          <option value="partner">Partnerimle</option>
-          <option value="family">Ailemle</option>
-          <option value="friends">Arkadaşlarımla</option>
+          <option value="" disabled hidden>
+          Select...
+          </option>
+
+          <option value="high">⭐ Popular & high-rated films</option>
+          <option value="low">🔍 Underrated / lesser-known films</option>
+          <option value="">⚖️ No preference (mixed)</option>
         </select>
       </div>
 
@@ -134,21 +168,25 @@ export default function Survey({ initial, onSubmit }: Props) {
             setAnswers((p) => ({ ...p, region: (e.target.value || undefined) as SurveyAnswers["region"] }))
           }
           > 
-            <option value="">Seç...</option>
+            <option value="" disabled hidden>
+            Select...
+            </option>
+            
             <option value="USA">USA</option>
             <option value="Europe">Europe</option>
             <option value="Asia">Asia</option>
-            <option value="World Cinema">World Cinema</option>        
+            <option value="World Cinema">World Cinema</option>
+            <option value="">No Preference</option>        
             </select>
       </div>
 
       <button
         className="bg-blue-600 text-white px-4 py-2 rounded-md"
-        onClick={() => onSubmit(answers)}
+        onClick={handleSubmit}
         disabled={answers.genres.length === 0}
         title={answers.genres.length === 0 ? "En az bir tür seçmelisin" : "Gönder"}
       >
-        Önerileri Göster
+        Get Recommendations
       </button>
     </div>
   );
