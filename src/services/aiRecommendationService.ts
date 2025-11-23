@@ -14,6 +14,12 @@ export interface AiRecommendationResponse {
 }
 
 export class AiRecommendationService {
+  private static cache = new Map<string, Movie[]>();
+
+  static getCached(query: string): Movie[] | undefined {
+    return this.cache.get(query);
+  }
+
   /**
    * Generates AI recommendations for a user
    * @param userQuery User's natural language query
@@ -23,6 +29,11 @@ export class AiRecommendationService {
     userQuery: string
   ): Promise<AiRecommendationResponse> {
     try {
+      // Check cache first (though the component should also check, double checking here is fine)
+      if (this.cache.has(userQuery)) {
+        return { movies: this.cache.get(userQuery)! };
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -104,6 +115,10 @@ export class AiRecommendationService {
           console.warn(`Movie not found: ${title}`);
         }
       }
+
+      // Store in cache
+      this.cache.set(userQuery, recommendedMovies);
+
       return { movies: recommendedMovies };
     } catch (error) {
       console.error("Error getting AI recommendations:", error);

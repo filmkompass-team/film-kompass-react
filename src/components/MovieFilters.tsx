@@ -19,7 +19,7 @@ export default function MovieFilters({
   const [aiInputValue, setAiInputValue] = useState(
     filters.aiRecommendation || ""
   );
-  const [isAiLoading, setIsAiLoading] = useState(false);
+
   const handleFilterChange = (
     key: keyof FilterType,
     value: string | number | undefined | boolean
@@ -127,7 +127,7 @@ export default function MovieFilters({
                 }
               }}
               className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              disabled={isLoading || isAiLoading}
+              disabled={isLoading}
             />
             {aiInputValue && (
               <button
@@ -150,11 +150,7 @@ export default function MovieFilters({
                 </svg>
               </button>
             )}
-            {isAiLoading && (
-              <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-              </div>
-            )}
+
           </div>
           {filters.aiRecommendation && (
             <p className="text-xs text-indigo-600 mt-1">

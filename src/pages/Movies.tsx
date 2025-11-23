@@ -115,6 +115,16 @@ export default function Movies() {
       return;
     }
 
+    // Check service cache first for immediate restoration
+    const cachedRecommendations = AiRecommendationService.getCached(currentQuery);
+    if (cachedRecommendations) {
+      setAiRecommendations(cachedRecommendations);
+      aiRecommendationsCacheRef.current = cachedRecommendations;
+      lastAiQueryRef.current = currentQuery;
+      setIsLoadingAI(false);
+      return;
+    }
+
     if (
       currentQuery === lastAiQueryRef.current &&
       aiRecommendationsCacheRef.current.length > 0
