@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { MovieFilters as FilterType } from "../types/movie";
 
 interface MovieFiltersProps {
@@ -15,6 +16,10 @@ export default function MovieFilters({
   years,
   isLoading,
 }: MovieFiltersProps) {
+  const [aiInputValue, setAiInputValue] = useState(
+    filters.aiRecommendation || ""
+  );
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const handleFilterChange = (
     key: keyof FilterType,
     value: string | number | undefined | boolean
@@ -23,6 +28,26 @@ export default function MovieFilters({
       ...filters,
       [key]: value || undefined,
     });
+  };
+
+  const handleAiInputChange = (value: string) => {
+    setAiInputValue(value);
+  };
+
+  const handleAiSubmit = () => {
+    if (aiInputValue.trim()) {
+      onFiltersChange({
+        ...filters,
+        aiRecommendation: aiInputValue.trim(),
+      });
+    }
+  };
+
+  const handleAiClear = () => {
+    setAiInputValue("");
+    const newFilters = { ...filters };
+    delete newFilters.aiRecommendation;
+    onFiltersChange(newFilters);
   };
 
   const clearFilters = () => {
@@ -90,16 +115,52 @@ export default function MovieFilters({
           <label className="block text-sm font-medium text-gray-700 mb-2">
             AI Recommendation
           </label>
-          <div
-            onClick={() => {
-              alert("Feature coming soon!");
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer bg-gray-50 flex items-center"
-          >
-            <span className="text-gray-500">
-              Describe what you want to watch...
-            </span>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Describe what you want to watch..."
+              value={aiInputValue}
+              onChange={(e) => handleAiInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAiSubmit();
+                }
+              }}
+              className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={isLoading || isAiLoading}
+            />
+            {aiInputValue && (
+              <button
+                onClick={handleAiClear}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                type="button"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
+            {isAiLoading && (
+              <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+              </div>
+            )}
           </div>
+          {filters.aiRecommendation && (
+            <p className="text-xs text-indigo-600 mt-1">
+              AI: {filters.aiRecommendation}
+            </p>
+          )}
         </div>
 
         {/* Genre Filter */}

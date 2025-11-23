@@ -26,6 +26,7 @@ export default function MovieDetailPage() {
   const searchParam = searchParams.get("search");
   const genreParam = searchParams.get("genre");
   const yearParam = searchParams.get("year");
+  const aiParam = searchParams.get("aiRecommendation");
   const currentPage = pageParam ? parseInt(pageParam) : 1;
 
   useEffect(() => {
@@ -73,14 +74,13 @@ export default function MovieDetailPage() {
             UserListService.checkMovieInList(movie.tmdb_id, "favorites"),
             UserListService.checkMovieInList(movie.tmdb_id, "watched"),
             UserListService.checkMovieInList(movie.tmdb_id, "wishlist"),
-            RatingService.getUserRatingForMovie(movie.tmdb_id) // PUANI ÇEK
+            RatingService.getUserRatingForMovie(movie.tmdb_id), // PUANI ÇEK
           ]);
 
           setIsFavorite(favorite);
           setIsWatched(watched);
           setIsInWishlist(wishlist);
           setUserRating(rating); // PUAN STATE'İNİ AYARLA
-
         } catch (error) {
           console.error("Error checking movie status or rating:", error);
         } finally {
@@ -89,8 +89,8 @@ export default function MovieDetailPage() {
       };
       checkStatusAndRating();
     } else if (!user) {
-        // Kullanıcı giriş yapmadıysa puan yüklemesini bitir
-        setRatingLoading(false);
+      // Kullanıcı giriş yapmadıysa puan yüklemesini bitir
+      setRatingLoading(false);
     }
   }, [movie, user]);
 
@@ -113,8 +113,6 @@ export default function MovieDetailPage() {
     if (rating >= 6) return "bg-orange-500";
     return "bg-red-500";
   };
-
-  
 
   const handleListAction = async (
     listType: "favorites" | "watched" | "wishlist"
@@ -167,7 +165,10 @@ export default function MovieDetailPage() {
     }
   };
 
-  const handleRatingSubmit = async (movieId: number, rating: number): Promise<void> => {
+  const handleRatingSubmit = async (
+    movieId: number,
+    rating: number
+  ): Promise<void> => {
     if (!user) {
       navigate("/login");
       return;
@@ -211,6 +212,7 @@ export default function MovieDetailPage() {
               if (searchParam) params.set("search", searchParam);
               if (genreParam) params.set("genre", genreParam);
               if (yearParam) params.set("year", yearParam);
+              if (aiParam) params.set("aiRecommendation", aiParam);
               navigate(`/movies?${params.toString()}`);
             }}
             className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
@@ -340,13 +342,13 @@ export default function MovieDetailPage() {
                     </div>
                   </div>
                 )}
-                {/* Rating Buttons */}
+              {/* Rating Buttons */}
               {user && !ratingLoading && (
-                  <RatingComponent
-                      movieId={movie.tmdb_id}
-                      initialRating={userRating}
-                      onRatingSubmit={handleRatingSubmit}
-                  />
+                <RatingComponent
+                  movieId={movie.tmdb_id}
+                  initialRating={userRating}
+                  onRatingSubmit={handleRatingSubmit}
+                />
               )}
 
               {/* Action Buttons */}
@@ -360,6 +362,7 @@ export default function MovieDetailPage() {
                     if (searchParam) params.set("search", searchParam);
                     if (genreParam) params.set("genre", genreParam);
                     if (yearParam) params.set("year", yearParam);
+                    if (aiParam) params.set("aiRecommendation", aiParam);
                     navigate(`/movies?${params.toString()}`);
                   }}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-8 rounded-xl font-semibold text-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"

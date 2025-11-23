@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+
 import type {
   Movie,
   MovieFilters as FilterType,
@@ -9,6 +10,7 @@ import { MovieService } from "../services/movieService";
 import MovieCard from "../components/MovieCard";
 import MovieFilters from "../components/MovieFilters";
 import Pagination from "../components/Pagination";
+import { AiRecommendationService } from "../services/aiRecommendationService";
 
 export default function Movies() {
   const navigate = useNavigate();
@@ -27,7 +29,9 @@ export default function Movies() {
     const genre = searchParams.get("genre");
     const year = searchParams.get("year");
     const kidsOnly = searchParams.get("kidsOnly");
+    const ai = searchParams.get("aiRecommendation");
 
+    if (ai) urlFilters.aiRecommendation = ai;
     if (search) urlFilters.search = search;
     if (genre) urlFilters.genre = genre;
     if (year) urlFilters.year = parseInt(year);
@@ -39,29 +43,31 @@ export default function Movies() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState<Movie[]>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
 
-  const fetchMovies = useCallback(async (
-    page: number = 1,
-    isInitialLoad: boolean = false
-  ) => {
-    try {
-      if (isInitialLoad) {
-        setLoading(true);
-      } else {
-        setIsTransitioning(true);
+  const fetchMovies = useCallback(
+    async (page: number = 1, isInitialLoad: boolean = false) => {
+      try {
+        if (isInitialLoad) {
+          setLoading(true);
+        } else {
+          setIsTransitioning(true);
+        }
+        setError(null);
+        const result = await MovieService.getMovies(page, 20, filters);
+        setMovies(result.movies);
+        setPagination(result.pagination);
+      } catch (error) {
+        console.error("Error fetching movies:", error);
+        setError("Failed to load movies. Please try again.");
+      } finally {
+        setLoading(false);
+        setIsTransitioning(false);
       }
-      setError(null);
-      const result = await MovieService.getMovies(page, 20, filters);
-      setMovies(result.movies);
-      setPagination(result.pagination);
-    } catch (error) {
-      console.error("Error fetching movies:", error);
-      setError("Failed to load movies. Please try again.");
-    } finally {
-      setLoading(false);
-      setIsTransitioning(false);
-    }
-  }, [filters]);
+    },
+    [filters]
+  );
 
   const fetchFilters = async () => {
     try {
@@ -93,6 +99,61 @@ export default function Movies() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
+  //Adding cache for AI Recommendations
+  const lastAiQueryRef = useRef<string>("");
+  const aiRecommendationsCacheRef = useRef<Movie[]>([]);
+
+  //New UseEffect for AI Recommendation
+  useEffect(() => {
+    const currentQuery = filters.aiRecommendation?.trim() || "";
+
+    if (!currentQuery) {
+      setAiRecommendations([]);
+      lastAiQueryRef.current = "";
+      aiRecommendationsCacheRef.current = [];
+      setIsLoadingAI(false);
+      return;
+    }
+
+    if (
+      currentQuery === lastAiQueryRef.current &&
+      aiRecommendationsCacheRef.current.length > 0
+    ) {
+      setAiRecommendations(aiRecommendationsCacheRef.current);
+      setIsLoadingAI(false);
+      return;
+    }
+
+    // Yeni query için debounce ile API çağrısı yap
+    setIsLoadingAI(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const result = await AiRecommendationService.getRecommendations(
+          currentQuery
+        );
+        if (result.error) {
+          setError(result.error);
+          setAiRecommendations([]);
+          aiRecommendationsCacheRef.current = [];
+        } else {
+          setAiRecommendations(result.movies);
+          aiRecommendationsCacheRef.current = result.movies;
+          lastAiQueryRef.current = currentQuery;
+          setError(null);
+        }
+      } catch (error) {
+        console.error("Error fetching AI recommendations:", error);
+        setError("Failed to get AI recommendations. Please try again.");
+        setAiRecommendations([]);
+        aiRecommendationsCacheRef.current = [];
+      } finally {
+        setIsLoadingAI(false);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [filters.aiRecommendation]);
+
   const handlePageChange = (page: number) => {
     fetchMovies(page, false);
     // Update URL with new page number while preserving current filters
@@ -102,6 +163,8 @@ export default function Movies() {
     if (filters.genre) params.set("genre", filters.genre);
     if (filters.year) params.set("year", filters.year.toString());
     if (filters.kidsOnly) params.set("kidsOnly", "true");
+    if (filters.aiRecommendation)
+      params.set("aiRecommendation", filters.aiRecommendation);
 
     navigate(`/movies?${params.toString()}`, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -116,6 +179,8 @@ export default function Movies() {
     if (newFilters.genre) params.set("genre", newFilters.genre);
     if (newFilters.year) params.set("year", newFilters.year.toString());
     if (newFilters.kidsOnly) params.set("kidsOnly", "true");
+    if (newFilters.aiRecommendation)
+      params.set("aiRecommendation", newFilters.aiRecommendation);
     // Reset to page 1 when filters change
     params.set("page", "1");
 
@@ -130,8 +195,16 @@ export default function Movies() {
     if (filters.genre) params.set("genre", filters.genre);
     if (filters.year) params.set("year", filters.year.toString());
     if (filters.kidsOnly) params.set("kidsOnly", "true");
+    if (filters.aiRecommendation)
+      params.set("aiRecommendation", filters.aiRecommendation);
     navigate(`/movie/${movie.tmdb_id}?${params.toString()}`);
   };
+
+  const displayMovies = filters.aiRecommendation ? aiRecommendations : movies;
+
+  const displayLoading = filters.aiRecommendation
+    ? isLoadingAI
+    : loading || isTransitioning;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 page-transition">
@@ -152,7 +225,7 @@ export default function Movies() {
           onFiltersChange={handleFiltersChange}
           genres={genres}
           years={years}
-          isLoading={loading}
+          isLoading={loading || isLoadingAI}
         />
 
         {/* Error State */}
@@ -166,20 +239,32 @@ export default function Movies() {
         )}
 
         {/* Transition Loading Indicator */}
-        {isTransitioning && (
+        {displayLoading && (
           <div className="flex justify-center items-center py-8">
             <div className="flex items-center space-x-2">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-              <span className="text-gray-600">Loading...</span>
+              <span className="text-gray-600">
+                {filters.aiRecommendation
+                  ? "Getting AI recommendations..."
+                  : "Loading..."}
+              </span>
             </div>
           </div>
         )}
 
         {/* Movies Grid */}
-        {!error && !isTransitioning && (
+        {!error && !displayLoading && (
           <>
+            {filters.aiRecommendation && (
+              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <p className="text-sm text-indigo-800">
+                  <span className="font-semibold">AI Recommendation:</span> "
+                  {filters.aiRecommendation}"
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8 grid-transition">
-              {movies.map((movie) => (
+              {displayMovies.map((movie) => (
                 <MovieCard
                   key={movie.tmdb_id}
                   movie={movie}
@@ -189,20 +274,24 @@ export default function Movies() {
             </div>
 
             {/* Empty State */}
-            {movies.length === 0 && !loading && (
+            {displayMovies.length === 0 && !displayLoading && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🎬</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No movies found
+                  {filters.aiRecommendation
+                    ? "No recommendations found"
+                    : "No movies found"}
                 </h3>
                 <p className="text-gray-600">
-                  Try adjusting your filters to find more movies.
+                  {filters.aiRecommendation
+                    ? "Try adjusting your query or check back later."
+                    : "Try adjusting your filters to find more movies."}
                 </p>
               </div>
             )}
 
             {/* Pagination */}
-            {movies.length > 0 && (
+            {!filters.aiRecommendation && displayMovies.length > 0 && (
               <Pagination
                 pagination={pagination}
                 onPageChange={handlePageChange}
