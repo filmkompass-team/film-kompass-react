@@ -168,7 +168,7 @@ export default function MovieFilters({
             value={filters.genre || ""}
             onChange={(e) => handleFilterChange("genre", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            disabled={isLoading}
+            disabled={isLoading || !!filters.aiRecommendation}
           >
             <option value="">All Genres</option>
             {genres.map((genre) => (
@@ -193,7 +193,7 @@ export default function MovieFilters({
               )
             }
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            disabled={isLoading}
+            disabled={isLoading || !!filters.aiRecommendation}
           >
             <option value="">All Years</option>
             {years.map((year) => (
@@ -205,7 +205,6 @@ export default function MovieFilters({
         </div>
       </div>
 
-      {/* Kids Filter - Grid'in DIŞINDA */}
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-center justify-between">
           <div>

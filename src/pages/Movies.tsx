@@ -134,7 +134,6 @@ export default function Movies() {
       return;
     }
 
-    // Yeni query için debounce ile API çağrısı yap
     setIsLoadingAI(true);
     const timeoutId = setTimeout(async () => {
       try {
@@ -189,8 +188,11 @@ export default function Movies() {
     if (newFilters.genre) params.set("genre", newFilters.genre);
     if (newFilters.year) params.set("year", newFilters.year.toString());
     if (newFilters.kidsOnly) params.set("kidsOnly", "true");
-    if (newFilters.aiRecommendation)
+    if (newFilters.aiRecommendation){
       params.set("aiRecommendation", newFilters.aiRecommendation);
+      newFilters.genre = undefined;
+      newFilters.year = undefined;
+    }
     // Reset to page 1 when filters change
     params.set("page", "1");
 
@@ -210,7 +212,14 @@ export default function Movies() {
     navigate(`/movie/${movie.tmdb_id}?${params.toString()}`);
   };
 
-  const displayMovies = filters.aiRecommendation ? aiRecommendations : movies;
+  const displayMovies = filters.aiRecommendation
+    ? filters.kidsOnly
+      ? aiRecommendations.filter(
+        (m) => !m.adult && m.genres?.some((g) =>
+        ["Children", "Animation", "Family"].includes(g))
+      )
+    : aiRecommendations
+    : movies  ;
 
   const displayLoading = filters.aiRecommendation
     ? isLoadingAI
