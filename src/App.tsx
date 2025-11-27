@@ -6,6 +6,8 @@ import Movies from "./pages/Movies";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import VerifiedPage from "./pages/VerifiedPage";
 import MyListsPage from "./pages/MyListsPage";
+import SurveyPage from "./pages/SurveyPage";
+
 
 function App() {
   return (
@@ -21,6 +23,7 @@ function App() {
           <Route path="/verified" element={<VerifiedPage />} />
           <Route path="/my-lists" element={<MyListsPage />} />
           <Route path="/my-lists/:listType" element={<MyListsPage />} />
+          <Route path="/survey" element={<SurveyPage />} />
         </Routes>
       </div>
     </BrowserRouter>
