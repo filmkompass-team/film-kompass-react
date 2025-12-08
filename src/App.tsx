@@ -7,7 +7,8 @@ import MovieDetailPage from "./pages/MovieDetailPage";
 import VerifiedPage from "./pages/VerifiedPage";
 import MyListsPage from "./pages/MyListsPage";
 import SurveyPage from "./pages/SurveyPage";
-
+import UpdatePasswordPage from "./pages/UpdatePasswordPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
           <Route path="/my-lists" element={<MyListsPage />} />
           <Route path="/my-lists/:listType" element={<MyListsPage />} />
           <Route path="/survey" element={<SurveyPage />} />
+          <Route path="/update-password" element={<UpdatePasswordPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Routes>
       </div>
     </BrowserRouter>
