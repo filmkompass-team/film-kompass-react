@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import type {
@@ -93,6 +93,24 @@ export default function Movies() {
     const targetPage = pageParam ? parseInt(pageParam) : 1;
     fetchMovies(targetPage, true);
   }, [filters, searchParams, fetchMovies]);
+
+  useEffect(() => {
+    const urlFilters: FilterType = {};
+    const search = searchParams.get("search");
+    const genre = searchParams.get("genre");
+    const year = searchParams.get("year");
+    const kidsOnly = searchParams.get("kidsOnly");
+    const ai = searchParams.get("aiRecommendation");
+
+    if (ai) urlFilters.aiRecommendation = ai;
+    if (search) urlFilters.search = search;
+    if (genre) urlFilters.genre = genre;
+    if (year) urlFilters.year = parseInt(year);
+    if (kidsOnly === "true") urlFilters.kidsOnly = true;
+
+    setFilters(urlFilters);
+    
+  }, [searchParams]);
 
   // Scroll to top when component mounts
   useEffect(() => {
