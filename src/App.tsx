@@ -9,6 +9,9 @@ import MyListsPage from "./pages/MyListsPage";
 import SurveyPage from "./pages/SurveyPage";
 import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import supabase from "./utils/supabase";
 
 function App() {
   return (
@@ -33,4 +36,20 @@ function App() {
   );
 }
 
+function AuthListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription}} = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        navigate("/update-password");
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  return null;
+}
 export default App;
