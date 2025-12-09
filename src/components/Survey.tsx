@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SurveyAnswers, DurationPref, Year } from "../types/survey";
+import type { SurveyAnswers, DurationPref, Year, Region, Population } from "../types/survey";
 
 type Props = {
   initial?: Partial<SurveyAnswers>;
@@ -23,6 +23,23 @@ const SOCIAL_CONTEXTS = [
   { key: "family", label: "👨‍👩‍👧 Family Night" },
   { key: "neutral", label: "😐 No Preference" },
 ];
+
+const REGIONS = [
+  { key : "hollywood", label: "🇺🇸 Hollywood (USA)"},
+  { key : "european", label: "🇪🇺 European Cinema"},
+  { key : "asian", label: "🌏 Asian Cinema (Korea, Japan, India)"},
+  { key : "turkish", label: "🇹🇷 Turkish Films"},
+  { key : "world", label: "🌍 World Cinema (Mixed)"},
+  { key: "any", label: "😐 No Preference"}
+];
+
+const POPULATIONS = [
+  { key : "blockbuster", label: "🎬 Blockbuster / Mainstream"},
+  { key : "cult", label: "🎭 Cult Classics"},
+  { key : "hidden_gems", label: "💎 Hidden Gems (Underrated)"},
+  { key : "festival", label: "🏆 Festival Favorites (Award-winning)"},
+  { key :  "any", label : "😐 No Preference"}
+];
   
 
 export default function Survey({ onSubmit }: Props) {
@@ -31,15 +48,19 @@ export default function Survey({ onSubmit }: Props) {
     socialContext: "",
     year: undefined,
     duration: undefined,
+    region: undefined,
+    population: undefined,
   });
 
-// Submit Kontrolü
+// Submit Control
   const validateSurvey = (a: SurveyAnswers) => {
     return (
       a.mood !== "" &&
       a.socialContext !== "" &&
       a.year &&
-      a.duration
+      a.duration &&
+      a.region &&
+      a.population
     );
   };
 
@@ -50,7 +71,6 @@ export default function Survey({ onSubmit }: Props) {
     }
 
     onSubmit(answers);
-    // ✔ Valid → AI önerilerine gönder
     console.log("All good!", answers);
   };
 
@@ -135,6 +155,46 @@ export default function Survey({ onSubmit }: Props) {
           <option value="medium">🎬 90–120 min</option>
           <option value="long">🕓 120+ min</option>
           <option value="any">No Preference</option>
+        </select>
+      </div>
+      {/* Q5: Region */}
+      <div className="mb-4">
+        <p className="font-medium mb-2">5) Film Origin / Region?</p>
+        <select
+          className="border rounded p-2 w-full"
+          value={answers.region ?? ""}
+          onChange={(e) =>
+            setAnswers((p) => ({ ...p, region: (e.target.value || undefined) as Region }))
+          }
+        >
+          <option value="" disabled hidden>
+            Select region...
+          </option>
+          {REGIONS.map((r) => (
+            <option key={r.key} value={r.key}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+       {/* Q6: Population */}
+      <div className="mb-4">
+        <p className="font-medium mb-2">6) Film Popularity?</p>
+        <select
+          className="border rounded p-2 w-full"
+          value={answers.population ?? ""}
+          onChange={(e) =>
+            setAnswers((p) => ({ ...p, population: (e.target.value || undefined) as Population }))
+          }
+        >
+          <option value="" disabled hidden>
+            Select type...
+          </option>
+          {POPULATIONS.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
         </select>
       </div>
       <button

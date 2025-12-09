@@ -11,7 +11,7 @@ export default function SurveyPage() {
   const handleSubmit = (answers: SurveyAnswers) => {
     saveSurvey(answers);
     const aiPrompt = `Recommend me a movie that makes me feel ${answers.mood}.
-    I am watching with ${answers.socialContext}. Preferred duration is ${answers.duration || "any"}. Era: ${answers.year || "any"}.`
+    I am watching with ${answers.socialContext}. Preferred duration is ${answers.duration || "any"}. Era: ${answers.year || "any"}. ${answers.region && answers.region !== "any" ? `Prefer films from ${answers.region} region. ` : ""} ${answers.population && answers.population !== "any" ? `Looking for ${answers.population} type films.` : ""}`;
 
      const params = new URLSearchParams();
      params.set("aiRecommendation", aiPrompt);

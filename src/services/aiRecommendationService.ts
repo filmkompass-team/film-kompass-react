@@ -13,6 +13,13 @@ export interface AiRecommendationResponse {
   error?: string;
 }
 
+const getDurationFromQuery = (query:string): string | null => {
+  if(query.includes("short") || query.includes("<90")) return "short";
+  if(query.includes("medium") || query.includes("90-120")) return "medium";
+  if(query.includes("long") || query.includes("120+")) return "long";
+  return null;
+};
+
 export class AiRecommendationService {
   private static cache = new Map<string, Movie[]>();
 
@@ -91,8 +98,10 @@ export class AiRecommendationService {
 
       if (data.error) {
         return { movies: [], error: data.error };
-      }
 
+      }
+      
+      const durationPref = getDurationFromQuery(userQuery);
       const recommendedMovieTitles = data.recommendedMovies || [];
       const recommendedMovies: Movie[] = [];
 
@@ -109,7 +118,12 @@ export class AiRecommendationService {
             .single();
 
           if (!searchError && movieData) {
-            recommendedMovies.push(movieData as Movie);
+            const movie = movieData as Movie;
+            if(durationPref === "short" && movie.runtime && movie.runtime >= 90) continue;
+            if(durationPref === "medium" && (movie.runtime && (movie.runtime < 90 || movie.runtime >= 120))) continue;
+            if(durationPref === "long" && movie.runtime && movie.runtime < 120) continue;
+
+            recommendedMovies.push(movie);
           }
         } catch (err) {
           console.warn(`Movie not found: ${title}`);
