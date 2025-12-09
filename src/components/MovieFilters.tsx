@@ -152,11 +152,7 @@ export default function MovieFilters({
             )}
 
           </div>
-          {filters.aiRecommendation && (
-            <p className="text-xs text-indigo-600 mt-1">
-              AI: {filters.aiRecommendation}
-            </p>
-          )}
+
         </div>
 
         {/* Genre Filter */}

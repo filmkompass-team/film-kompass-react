@@ -10,17 +10,18 @@ export default function SurveyPage() {
 
   const handleSubmit = (answers: SurveyAnswers) => {
     saveSurvey(answers);
-    // Şimdilik Movies sayfasına yönlendiriyoruz;
-    // Burada API çağırıp önerileri bu sayfada da listeleyebiliriz.
-    navigate("/movies");
+    const aiPrompt = `Recommend me a movie that makes me feel ${answers.mood}.
+    I am watching with ${answers.socialContext}. Preferred duration is ${answers.duration || "any"}. Era: ${answers.year || "any"}.`
+
+     const params = new URLSearchParams();
+     params.set("aiRecommendation", aiPrompt);
+
+     navigate(`/movies?${params.toString()}`);
   };
 
   return (
     <div className="max-w-3xl mx-auto p-4">
       <Survey initial={initial} onSubmit={handleSubmit} />
-      <p className="text-sm text-gray-500 mt-4">
-        Note: Answers have been saved.
-      </p>
     </div>
   );
 }

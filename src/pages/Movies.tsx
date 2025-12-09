@@ -302,14 +302,7 @@ export default function Movies() {
         {/* Movies Grid */}
         {!error && !displayLoading && (
           <>
-            {filters.aiRecommendation && (
-              <div className="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <p className="text-sm text-indigo-800">
-                  <span className="font-semibold">AI Recommendation:</span> "
-                  {filters.aiRecommendation}"
-                </p>
-              </div>
-            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8 grid-transition">
               {displayMovies.map((movie) => (
                 <MovieCard
