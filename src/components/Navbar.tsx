@@ -9,6 +9,25 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
+  async function loadUser() {
+    const { data } = await supabase.auth.getUser();
+    setUser(data.user);
+    setLoading(false);
+  }
+
+  loadUser();
+
+  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    setUser(session?.user || null);
+  });
+
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
+
+
+  useEffect(() => {
     const checkUser = async () => {
       const {
         data: { session },
@@ -94,6 +113,14 @@ export default function Navbar() {
                 <span className="text-gray-700 font-medium text-sm sm:text-base hidden sm:block">
                   Welcome, {user.email?.split("@")[0]}
                 </span>
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="px-3 py-2 sm:px-4 bg-gray-100 text-gray-700 rounded-lg
+                      hover:bg-gray-200 transition-colors duration-200 font-medium
+                      cursor-pointer text-sm sm:text-base"
+                >
+                  Profile
+                </button>
                 {/* My Lists Dropdown */}
                 <div className="relative dropdown-container">
                   <button
@@ -185,19 +212,24 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => navigate("/login")}
-                  className="px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors duration-200 font-medium cursor-pointer hover:bg-gray-50 rounded-lg"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate("/register")}
-                  className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105"
-                >
-                  Sign Up
-                </button>
-              </div>
+
+              {/* Login */}
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors duration-200 font-medium cursor-pointer hover:bg-gray-50 rounded-lg"
+              >
+                Login
+              </button>
+
+              {/* Sign Up */}
+              <button
+                onClick={() => navigate("/register")}
+                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                Sign Up
+              </button>
+            </div>
+
             )}
           </div>
         </div>
