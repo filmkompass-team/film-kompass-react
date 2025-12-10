@@ -12,6 +12,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import supabase from "./utils/supabase";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
           <Route path="/survey" element={<SurveyPage />} />
           <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+
         </Routes>
       </div>
     </BrowserRouter>
