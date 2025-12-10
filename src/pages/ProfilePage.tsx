@@ -1,15 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import supabase from "../utils/supabase";
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
+
+  // Username state
+  const [username, setUsername] = useState<string>("");
+  const [isSavingUsername, setIsSavingUsername] = useState<boolean>(false);
+
+  // Stats states
   const [totalWatched, setTotalWatched] = useState<number>(0);
   const [favoriteGenre, setFavoriteGenre] = useState<string>("Unknown");
   const [totalRatings, setTotalRatings] = useState<number>(0);
+
+  // Activity & lists
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [watchedList, setWatchedList] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
+
+  // ---- LOADERS ----
 
   const loadRatings = async (userId: string) => {
     const { data } = await supabase
@@ -65,24 +75,22 @@ export default function ProfilePage() {
     setRecentActivity(data || []);
   };
 
-  
   const loadMovieList = async (
     userId: string,
     listType: "favorites" | "watched" | "wishlist"
   ) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("user_movie_lists")
       .select("movies(title, poster_url)")
       .eq("user_id", userId)
       .eq("list_type", listType);
 
-    if (error) {
-      console.error("Error loading list", listType, error);
-      return [];
-    }
+    if (!data) return [];
 
-    return (data || []).map((item: any) => item.movies);
+    return data.map((item: any) => item.movies);
   };
+
+  // ---- EFFECT: session & user ----
 
   useEffect(() => {
     const checkSession = async () => {
@@ -94,30 +102,64 @@ export default function ProfilePage() {
 
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+
       setUser(data.user);
 
-      if (data.user) {
-        const userId = data.user.id;
+      // initial username
+      const initialUsername =
+        data.user.user_metadata?.username ||
+        data.user.user_metadata?.full_name ||
+        (data.user.email ? data.user.email.split("@")[0] : "User");
 
-        await loadRatings(userId);
-        await loadWatched(userId);
-        await loadFavoriteGenre(userId);
-        await loadRecentActivity(userId);
+      setUsername(initialUsername);
 
-        const fav = await loadMovieList(userId, "favorites");
-        setFavorites(fav);
+      // stats & lists
+      await loadRatings(data.user.id);
+      await loadWatched(data.user.id);
+      await loadFavoriteGenre(data.user.id);
+      await loadRecentActivity(data.user.id);
 
-        const watch = await loadMovieList(userId, "watched");
-        setWatchedList(watch);
+      const fav = await loadMovieList(data.user.id, "favorites");
+      setFavorites(fav);
 
-        const wish = await loadMovieList(userId, "wishlist");
-        setWishlist(wish);
-      }
+      const watch = await loadMovieList(data.user.id, "watched");
+      setWatchedList(watch);
+
+      const wish = await loadMovieList(data.user.id, "wishlist");
+      setWishlist(wish);
     };
 
     checkSession();
     fetchUser();
   }, []);
+
+  // ---- USERNAME SAVE ----
+
+  const handleUsernameSave = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setIsSavingUsername(true);
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: { username },
+    });
+
+    setIsSavingUsername(false);
+
+    if (error) {
+      console.error("Error updating username:", error);
+      alert("Could not save username. Please try again.");
+      return;
+    }
+
+    if (data?.user) {
+      setUser(data.user);
+    }
+  };
+
+  // ---- RENDER ----
 
   if (!user) {
     return <p className="text-white p-6">Loading profile...</p>;
@@ -128,31 +170,46 @@ export default function ProfilePage() {
       {/* HEADER */}
       <div className="flex items-center gap-6">
         <img
-          src={
-            user.user_metadata?.avatar_url ||
-            "https://via.placeholder.com/120"
-          }
+          src={user.user_metadata?.avatar_url || "https://via.placeholder.com/120"}
           alt="User Avatar"
           className="w-28 h-28 rounded-full border-2 border-purple-400"
         />
 
-        <div>
-          <h2 className="text-3xl font-bold">
-            {user.user_metadata?.full_name || "Anonymous User"}
-          </h2>
-          <p className="text-gray-300">{user.email}</p>
+        <div className="space-y-2">
+          {/* Username form */}
+          <form
+            onSubmit={handleUsernameSave}
+            className="flex items-center gap-2 flex-wrap"
+          >
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="bg-purple-900/40 border border-purple-500 rounded-lg px-3 py-1 text-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              placeholder="Username"
+            />
+            <button
+              type="submit"
+              disabled={isSavingUsername}
+              className="px-3 py-1 rounded-lg bg-purple-500 text-sm font-semibold hover:bg-purple-600 disabled:opacity-60"
+            >
+              {isSavingUsername ? "Saving..." : "Save"}
+            </button>
+          </form>
+
+          <p className="text-gray-300 text-sm">{user.email}</p>
         </div>
       </div>
 
       {/* USER STATS */}
-      <div className="grid grid-cols-3 gap-6 text-center">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
         <div className="bg-purple-600/20 p-4 rounded-xl">
           <p className="text-4xl font-bold">{totalWatched}</p>
           <p className="text-gray-300">Watched Movies</p>
         </div>
 
         <div className="bg-purple-600/20 p-4 rounded-xl">
-          <p className="text-2xl font-bold">{favoriteGenre}</p>
+          <p className="text-2xl font-bold break-words">{favoriteGenre}</p>
           <p className="text-gray-300">Favorite Genre</p>
         </div>
 
@@ -174,10 +231,7 @@ export default function ProfilePage() {
               >
                 {/* Poster */}
                 <img
-                  src={
-                    item.movies?.poster_url ||
-                    "https://via.placeholder.com/50"
-                  }
+                  src={item.movies?.poster_url || "https://via.placeholder.com/50"}
                   className="w-12 h-16 rounded-md object-cover"
                   alt={item.movies?.title || "Movie"}
                 />
@@ -207,35 +261,36 @@ export default function ProfilePage() {
       </div>
     </div>
   );
-}
 
-function ListPreview({ title, movies }: { title: string; movies: any[] }) {
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-xl font-semibold">{title}</h3>
-        <a
-          href={`/my-lists/${title.toLowerCase()}`}
-          className="text-purple-400 text-sm"
-        >
-          See all →
-        </a>
-      </div>
+  // Nested helper component
+  function ListPreview({ title, movies }: { title: string; movies: any[] }) {
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="text-xl font-semibold">{title}</h3>
+          <a
+            href={`/my-lists/${title.toLowerCase()}`}
+            className="text-purple-400 text-sm"
+          >
+            See all →
+          </a>
+        </div>
 
-      <div className="flex gap-3 overflow-x-auto">
-        {movies.length > 0 ? (
-          movies.map((movie, index) => (
-            <img
-              key={index}
-              src={movie.poster_url || "https://via.placeholder.com/80"}
-              alt={movie.title}
-              className="w-24 h-36 rounded-lg object-cover"
-            />
-          ))
-        ) : (
-          <p className="text-gray-400 text-sm">No movies yet 🚀</p>
-        )}
+        <div className="flex gap-3 overflow-x-auto">
+          {movies.length > 0 ? (
+            movies.map((movie, index) => (
+              <img
+                key={index}
+                src={movie.poster_url || "https://via.placeholder.com/80"}
+                alt={movie.title}
+                className="w-24 h-36 rounded-lg object-cover"
+              />
+            ))
+          ) : (
+            <p className="text-gray-400 text-sm">No movies yet 🚀</p>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
