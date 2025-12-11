@@ -4,7 +4,7 @@ import { FriendService } from "../services/friendService";
 import UserSearch from "../components/UserSearch";
 
 export default function ProfilePage() {
-  // TİP HATALARINI GİDERMEK İÇİN 'any' KULLANIYORUZ
+
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState<string>("");
   const [isSavingUsername, setIsSavingUsername] = useState<boolean>(false);
@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const [favoriteGenre, setFavoriteGenre] = useState<string>("Unknown");
   const [totalRatings, setTotalRatings] = useState<number>(0);
 
-  // Listeler - HATA VEREN KISIMLARI <any[]> YAPARAK ÇÖZDÜK
+
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [watchedList, setWatchedList] = useState<any[]>([]);

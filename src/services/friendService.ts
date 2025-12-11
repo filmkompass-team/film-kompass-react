@@ -1,6 +1,5 @@
 import supabase from "../utils/supabase";
 
-// Bu 'interface' eksik olduğu için UserSearch.tsx hata veriyordu
 export interface Profile {
     id: string;
     username: string;
@@ -8,7 +7,7 @@ export interface Profile {
 }
 
 export const FriendService = {
-    // 🔍 Kullanıcı Arama (Eksikti)
+    // 🔍 Kullanıcı Arama 
     async searchUsers(query: string) {
         if (!query) return [];
 
@@ -42,7 +41,7 @@ export const FriendService = {
         if (error) throw error;
     },
 
-    // 📋 Arkadaş Listesini Getir (Eksikti)
+    // 📋 Arkadaş Listesini Getir 
     async getFriends(userId: string) {
         const { data, error } = await supabase
             .from('friendships')
@@ -53,8 +52,7 @@ export const FriendService = {
       `)
             .eq('requester_id', userId);
 
-        // Not: Supabase ilişkilerinde receiver_id tablosunu 'profiles' olarak join eder
-        // Eğer join hatası alırsan SQL tarafında foreign key tanımlı demektir.
+
 
         if (error) {
             console.error("Arkadaş listesi hatası:", error);
