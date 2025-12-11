@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import supabase from "../utils/supabase";
+import FilmCompassLogo from "../assets/transparan_logo.png";
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
@@ -9,22 +10,22 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   useEffect(() => {
-  async function loadUser() {
-    const { data } = await supabase.auth.getUser();
-    setUser(data.user);
-    setLoading(false);
-  }
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+      setLoading(false);
+    }
 
-  loadUser();
+    loadUser();
 
-  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-    setUser(session?.user || null);
-  });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
 
-  return () => {
-    listener.subscription.unsubscribe();
-  };
-}, []);
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -95,14 +96,13 @@ export default function Navbar() {
             onClick={() => navigate("/movies")}
           >
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white text-xl font-bold">🎬</span>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Film Compass
-                </h1>
-              </div>
+              <img
+                src={FilmCompassLogo}
+                alt="Film Compass Logo"
+                // Logo görselinizin boyutunu TailWind CSS ile ayarlayın
+                className="h-12 sm:h-16 w-auto"
+              />
+              
             </div>
           </div>
 
@@ -146,9 +146,8 @@ export default function Navbar() {
                     </svg>
                     <span className="hidden sm:inline">My Lists</span>
                     <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        showDropdown ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 transition-transform duration-200 ${showDropdown ? "rotate-180" : ""
+                        }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -205,22 +204,22 @@ export default function Navbar() {
             ) : (
               <div className="flex items-center space-x-2">
 
-              {/* Login */}
-              <button
-                onClick={() => navigate("/login")}
-                className="px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors duration-200 font-medium cursor-pointer hover:bg-gray-50 rounded-lg"
-              >
-                Login
-              </button>
+                {/* Login */}
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-4 py-2 text-gray-600 hover:text-indigo-600 transition-colors duration-200 font-medium cursor-pointer hover:bg-gray-50 rounded-lg"
+                >
+                  Login
+                </button>
 
-              {/* Sign Up */}
-              <button
-                onClick={() => navigate("/register")}
-                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105"
-              >
-                Sign Up
-              </button>
-            </div>
+                {/* Sign Up */}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium cursor-pointer shadow-md hover:shadow-lg transform hover:scale-105"
+                >
+                  Sign Up
+                </button>
+              </div>
 
             )}
           </div>
