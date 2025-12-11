@@ -52,6 +52,7 @@ export default function MovieFilters({
 
   const clearFilters = () => {
     onFiltersChange({});
+    setAiInputValue("");
   };
 
   const hasActiveFilters = Object.values(filters).some(

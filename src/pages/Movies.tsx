@@ -265,7 +265,7 @@ export default function Movies() {
           isLoading={loading || isLoadingAI}
         />
 
-        {/* Mini Anket Butonu */}
+        {/* Mini-Survey Button */}
         <div className="flex justify-end mb-4">
           <button
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
