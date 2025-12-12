@@ -11,21 +11,24 @@ const RatingComponent: React.FC<RatingComponentProps> = ({ movieId, initialRatin
   const [rating, setRating] = useState(initialRating || 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   
   useEffect(() => {
     setRating(initialRating || 0);
   }, [initialRating]);
 
-  const ratingChanged = async (newRating: number) => {
+  const ratingChanged = async (newRating: number) => {   
+    const finalRating = (newRating === rating) ? 0 : newRating;
+
     setIsSubmitting(true);
     setError(null);
     try {
-      await onRatingSubmit(movieId, newRating);
-      setRating(newRating); // Başarılı olursa state'i güncelle
+      
+      await onRatingSubmit(movieId, finalRating);
+      
+      setRating(finalRating); 
     } catch (e) {
       setError("Please try again!");
-      // Başarısız olursa eski puana geri dön
+    
       setRating(initialRating || 0);
     } finally {
       setIsSubmitting(false);
