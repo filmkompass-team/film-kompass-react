@@ -128,5 +128,38 @@ export class MovieService {
       return [];
     }
   }
+static async getRecommendationsForUser(userId: string): Promise<Movie[]> {
+    try {
+      // 1. Önce ID listesini çek
+      const { data: recData, error: recError } = await supabase
+        .from('recommendations')
+        .select('suggested_movies')
+        .eq('user_id', userId)
+        .maybeSingle();
 
+      if (recError) throw recError;
+
+      // Liste boşsa boş dön
+      if (!recData || !recData.suggested_movies || recData.suggested_movies.length === 0) {
+        return [];
+      }
+
+      const movieIds: number[] = recData.suggested_movies;
+
+      // 2. Sonra filmleri çek
+      const { data: moviesData, error: moviesError } = await supabase
+        .from('films')
+        .select('*')
+        .in('tmdb_id', movieIds);
+
+      if (moviesError) throw moviesError;
+
+      return (moviesData as Movie[]) || [];
+
+    } catch (error) {
+      console.error("Öneri servisi hatası:", error);
+      return [];
+    }
+  }
 }
+

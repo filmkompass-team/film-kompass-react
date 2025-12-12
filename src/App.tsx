@@ -13,6 +13,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import supabase from "./utils/supabase";
 import ProfilePage from "./pages/ProfilePage";
+import RecommendationsPage from './pages/RecommendationsPage';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/update-password" element={<UpdatePasswordPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/recommendations" element={<RecommendationsPage />} />
 
         </Routes>
       </div>

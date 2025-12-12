@@ -1,10 +1,7 @@
 import supabase from "../utils/supabase";
 
 export const RatingService = {
-  /**
-   * @param movieId Filmin TMDB ID'si
-   * @param rating Verilen puan (1-5)
-   */
+  
   submitRating: async (movieId: number, rating: number): Promise<void> => {
     const {
       data: { user },
@@ -13,6 +10,22 @@ export const RatingService = {
       throw new Error("User must login to vote!");
     }
 
+    
+    if (rating === 0) {
+      const { error } = await supabase
+        .from("ratings")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("movie_id", movieId);
+
+      if (error) {
+        console.error("Error deleting rating:", error);
+        throw error;
+      }
+      return; 
+    }
+
+    
     const { error } = await supabase.from("ratings").upsert(
       {
         movie_id: movieId,
@@ -30,10 +43,7 @@ export const RatingService = {
     }
   },
 
-  /**
-   * @param movieId Filmin TMDB ID'si
-   * @returns Kullanıcının verdiği puanı veya null döner.
-   */
+  
   getUserRatingForMovie: async (movieId: number): Promise<number | null> => {
     const {
       data: { user },
@@ -57,10 +67,7 @@ export const RatingService = {
     return data ? data.rating : null;
   },
 
-  /**
-   * Returns all ratings of a user
-   * @returns {movie_id: rating}
-   */
+  
   getAllUserRatings: async (): Promise<Record<number, number>> => {
     const {
       data: { user },

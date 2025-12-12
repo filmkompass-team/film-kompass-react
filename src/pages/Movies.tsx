@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef, use } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import supabase from "../utils/supabase";
 
 import type {
   Movie,
@@ -15,6 +16,7 @@ import { AiRecommendationService } from "../services/aiRecommendationService";
 export default function Movies() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  
   const [movies, setMovies] = useState<Movie[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
@@ -22,8 +24,11 @@ export default function Movies() {
     totalItems: 0,
     itemsPerPage: 20,
   });
+
+  // 2. DEĞİŞİKLİK: Kullanıcı ID'sini tutacak state'i ekledik
+  const [userId, setUserId] = useState<string | null>(null);
+
   const [filters, setFilters] = useState<FilterType>(() => {
-    // Initialize filters from URL parameters
     const urlFilters: FilterType = {};
     const search = searchParams.get("search");
     const genre = searchParams.get("genre");
@@ -38,6 +43,7 @@ export default function Movies() {
     if (kidsOnly === "true") urlFilters.kidsOnly = true;
     return urlFilters;
   });
+
   const [genres, setGenres] = useState<string[]>([]);
   const [years, setYears] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +51,17 @@ export default function Movies() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState<Movie[]>([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+
+  // 3. DEĞİŞİKLİK: Sayfa açılınca "Kullanıcı giriş yapmış mı?" diye kontrol eden kod
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    checkUser();
+  }, []);
 
   const fetchMovies = useCallback(
     async (page: number = 1, isInitialLoad: boolean = false) => {
@@ -79,7 +96,6 @@ export default function Movies() {
       setYears(yearsData);
     } catch (err) {
       console.error("Error fetching filters:", err);
-      // Silently handle filter data errors
     }
   };
 
@@ -88,7 +104,6 @@ export default function Movies() {
   }, []);
 
   useEffect(() => {
-    // Check if there's a page parameter in URL
     const pageParam = searchParams.get("page");
     const targetPage = pageParam ? parseInt(pageParam) : 1;
     fetchMovies(targetPage, true);
@@ -109,19 +124,16 @@ export default function Movies() {
     if (kidsOnly === "true") urlFilters.kidsOnly = true;
 
     setFilters(urlFilters);
-    
   }, [searchParams]);
 
-  // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
-  //Adding cache for AI Recommendations
+  // AI Cache Logic
   const lastAiQueryRef = useRef<string>("");
   const aiRecommendationsCacheRef = useRef<Movie[]>([]);
 
-  //New UseEffect for AI Recommendation
   useEffect(() => {
     const currentQuery = filters.aiRecommendation?.trim() || "";
 
@@ -133,7 +145,6 @@ export default function Movies() {
       return;
     }
 
-    // Check service cache first for immediate restoration
     const cachedRecommendations = AiRecommendationService.getCached(currentQuery);
     if (cachedRecommendations) {
       setAiRecommendations(cachedRecommendations);
@@ -155,9 +166,7 @@ export default function Movies() {
     setIsLoadingAI(true);
     const timeoutId = setTimeout(async () => {
       try {
-        const result = await AiRecommendationService.getRecommendations(
-          currentQuery
-        );
+        const result = await AiRecommendationService.getRecommendations(currentQuery);
         if (result.error) {
           setError(result.error);
           setAiRecommendations([]);
@@ -183,7 +192,6 @@ export default function Movies() {
 
   const handlePageChange = (page: number) => {
     fetchMovies(page, false);
-    // Update URL with new page number while preserving current filters
     const params = new URLSearchParams();
     params.set("page", page.toString());
     if (filters.search) params.set("search", filters.search);
@@ -199,8 +207,6 @@ export default function Movies() {
 
   const handleFiltersChange = (newFilters: FilterType) => {
     setFilters(newFilters);
-
-    // Update URL with new filters
     const params = new URLSearchParams();
     if (newFilters.search) params.set("search", newFilters.search);
     if (newFilters.genre) params.set("genre", newFilters.genre);
@@ -211,14 +217,11 @@ export default function Movies() {
       newFilters.genre = undefined;
       newFilters.year = undefined;
     }
-    // Reset to page 1 when filters change
     params.set("page", "1");
-
     setSearchParams(params);
   };
 
   const handleMovieClick = (movie: Movie) => {
-    // Build query string with current filters and page
     const params = new URLSearchParams();
     params.set("page", pagination.currentPage.toString());
     if (filters.search) params.set("search", filters.search);
@@ -233,11 +236,11 @@ export default function Movies() {
   const displayMovies = filters.aiRecommendation
     ? filters.kidsOnly
       ? aiRecommendations.filter(
-        (m) => !m.adult && m.genres?.some((g) =>
-        ["Children", "Animation", "Family"].includes(g))
-      )
-    : aiRecommendations
-    : movies  ;
+          (m) => !m.adult && m.genres?.some((g) =>
+          ["Children", "Animation", "Family"].includes(g))
+        )
+      : aiRecommendations
+    : movies;
 
   const displayLoading = filters.aiRecommendation
     ? isLoadingAI
@@ -265,8 +268,20 @@ export default function Movies() {
           isLoading={loading || isLoadingAI}
         />
 
-        {/* Mini-Survey Button */}
-        <div className="flex justify-end mb-4">
+        {/*Buttons*/}
+        <div className="flex justify-end gap-3 mb-4">
+          
+          {/*Recommendation Button*/}
+          {userId && (
+            <button
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-lg transition flex items-center gap-2"
+              onClick={() => navigate("/recommendations")}
+            >
+              ✨ Recommended for You
+            </button>
+          )}
+
+          {/* Survey Button */}
           <button
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
             onClick={() => navigate("/survey")}
@@ -302,7 +317,6 @@ export default function Movies() {
         {/* Movies Grid */}
         {!error && !displayLoading && (
           <>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8 grid-transition">
               {displayMovies.map((movie) => (
                 <MovieCard
