@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import supabase from "../utils/supabase";
 import FilmCompassLogo from "../assets/transparan_logo.png";
 
+
 export default function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +112,7 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center space-x-2 sm:space-x-4">
                 <span className="text-gray-700 font-medium text-sm sm:text-base hidden sm:block">
-                  Welcome, {user.email?.split("@")[0]}
+                  Welcome, {user.user_metadata?.username || user.email?.split("@")[0]}
                 </span>
                 <button
                   onClick={() => navigate("/profile")}

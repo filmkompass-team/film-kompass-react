@@ -142,6 +142,7 @@ export default function ProfilePage() {
     setIsSavingUsername(true);
     try {
       await UserService.updateUsername(user.id, username);
+      await supabase.auth.refreshSession();
       alert("Username updated!");
     } catch (error) {
       console.error("Username update failed", error);
