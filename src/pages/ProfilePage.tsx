@@ -1,19 +1,25 @@
 import { useEffect, useState, type FormEvent } from "react";
 import supabase from "../utils/supabase";
 import { FriendService } from "../services/friendService";
+import { UserService } from "../services/userService"; 
 import UserSearch from "../components/UserSearch";
 
-export default function ProfilePage() {
 
+const AVAILABLE_AVATARS = Array.from({ length: 24 }, (_, i) => `/src/assets/avatars/${i}.png`);
+
+export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>(""); // Avatar state'i
   const [isSavingUsername, setIsSavingUsername] = useState<boolean>(false);
+  
+  // Avatar Modal Kontrolü
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
 
   // İstatistikler
   const [totalWatched, setTotalWatched] = useState<number>(0);
   const [favoriteGenre, setFavoriteGenre] = useState<string>("Unknown");
   const [totalRatings, setTotalRatings] = useState<number>(0);
-
 
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -82,7 +88,9 @@ export default function ProfilePage() {
       if (!user) return;
 
       setUser(user);
+      
       setUsername(user.user_metadata?.username || user.email?.split("@")[0] || "User");
+      setAvatarUrl(user.user_metadata?.avatar_url || "https://via.placeholder.com/150");
 
       await Promise.all([
         loadRatings(user.id), loadWatched(user.id), loadFavoriteGenre(user.id),
@@ -99,20 +107,53 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!user) return;
     setIsSavingUsername(true);
-    await supabase.auth.updateUser({ data: { username } });
-    await supabase.from('profiles').update({ username }).eq('id', user.id);
-    setIsSavingUsername(false);
-    alert("Username updated!");
+    try {
+      await UserService.updateUsername(user.id, username);
+      alert("Username updated!");
+    } catch (error) {
+      console.error("Username update failed", error);
+      alert("Failed to update username.");
+    } finally {
+      setIsSavingUsername(false);
+    }
+  };
+
+  // Avatar Seçme Fonksiyonu
+  const handleAvatarSelect = async (newUrl: string) => {
+    if (!user) return;
+    try {
+        
+        setAvatarUrl(newUrl);
+        setIsAvatarModalOpen(false); 
+
+        
+        await UserService.updateAvatar(user.id, newUrl);
+    } catch (error) {
+        console.error("Avatar update failed", error);
+        alert("Failed to update avatar.");
+    }
   };
 
   if (!user) return <div className="min-h-screen bg-white flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-white text-gray-800 p-4 md:p-8 pb-24">
+    <div className="min-h-screen bg-white text-gray-800 p-4 md:p-8 pb-24 relative">
       <div className="max-w-6xl mx-auto space-y-12">
         {/* HEADER */}
         <div className="flex flex-col md:flex-row items-center gap-8 bg-gradient-to-r from-indigo-600 to-purple-700 p-8 rounded-3xl shadow-xl text-white">
-          <img src={user.user_metadata?.avatar_url || "https://via.placeholder.com/150"} alt="Profile" className="w-32 h-32 rounded-full border-4 border-white/20 object-cover shadow-xl" />
+          
+          {/* SELECT AVATAR */}
+          <div className="relative group cursor-pointer" onClick={() => setIsAvatarModalOpen(true)}>
+             <img 
+               src={avatarUrl} 
+               alt="Profile" 
+               className="w-32 h-32 rounded-full border-4 border-white/20 object-cover shadow-xl group-hover:opacity-80 transition" 
+             />
+             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                <span className="bg-black/50 p-1 rounded text-xs">Edit</span>
+             </div>
+          </div>
+
           <div className="flex-1 text-center md:text-left space-y-4">
             <div>
               <h1 className="text-4xl font-bold">{username}</h1>
@@ -140,7 +181,14 @@ export default function ProfilePage() {
               <div className="space-y-3 max-h-[300px] overflow-y-auto">
                 {friendList.length > 0 ? friendList.map((f: any) => (
                   <div key={f.id} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100">
-                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">{f.receiver?.username?.substring(0, 2).toUpperCase()}</div>
+                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold overflow-hidden">
+                        {/* Arkadaş listesinde arkaşadın avatarı*/}
+                        {f.receiver?.avatar_url ? (
+                            <img src={f.receiver.avatar_url} className="w-full h-full object-cover" />
+                        ) : (
+                            f.receiver?.username?.substring(0, 2).toUpperCase()
+                        )}
+                    </div>
                     <span className="font-bold text-gray-700">{f.receiver?.username}</span>
                     <span className="text-xs text-gray-500 capitalize ml-auto">{f.status}</span>
                   </div>
@@ -149,7 +197,7 @@ export default function ProfilePage() {
             </div>
           </div>
           {/* Search */}
-          <div className="lg:col-span-4 h-full">
+          <div className="lg:col-span-4 h-full z-0 relative">
             <UserSearch />
           </div>
         </div>
@@ -177,6 +225,31 @@ export default function ProfilePage() {
           <ListPreview title="Wishlist" movies={wishlist} icon="🎁" />
         </div>
       </div>
+
+      {/* AVATAR SELECTION MODAL */}
+      {isAvatarModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl relative animate-fade-in-down">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">Choose an Avatar</h3>
+                    <button onClick={() => setIsAvatarModalOpen(false)} className="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                </div>
+                
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                    {AVAILABLE_AVATARS.map((avatar, index) => (
+                        <div 
+                            key={index} 
+                            onClick={() => handleAvatarSelect(avatar)}
+                            className={`cursor-pointer rounded-full overflow-hidden border-4 transition hover:scale-105 ${avatarUrl === avatar ? 'border-indigo-600 scale-105' : 'border-transparent hover:border-gray-200'}`}
+                        >
+                            <img src={avatar} alt={`Avatar ${index + 1}`} className="w-full h-full object-cover" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }
