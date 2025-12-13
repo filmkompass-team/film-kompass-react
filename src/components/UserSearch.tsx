@@ -1,171 +1,185 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // <--- 1. BU LAZIM
-import supabase from "../utils/supabase";
-import { FriendService, type Profile } from "../services/friendService";
+import { useState, useEffect, useRef } from 'react';
+import supabase from '../utils/supabase';
+import { FriendService } from '../services/friendService';
+import { useNavigate } from 'react-router-dom';
 
 export default function UserSearch() {
-    const navigate = useNavigate(); // <--- 2. BU LAZIM
-    const [query, setQuery] = useState("");
-    const [results, setResults] = useState<Profile[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState<any[]>([]);
 
-    const [pendingUsers, setPendingUsers] = useState<Set<string>>(new Set());
+    // Hangi kullanıcılara istek atılmış, ID'lerini tutuyoruz
+    const [sentRequestIds, setSentRequestIds] = useState<Set<string>>(new Set());
+
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const navigate = useNavigate();
+    const searchContainerRef = useRef<HTMLDivElement>(null);
 
+    // 1. Mevcut kullanıcıyı al
     useEffect(() => {
-        const initData = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setCurrentUserId(user.id);
-                const sentIds = await FriendService.getSentRequests(user.id);
-                setPendingUsers(new Set(sentIds));
-            }
-        };
-        initData();
+        supabase.auth.getUser().then(({ data }) => {
+            if (data.user) setCurrentUserId(data.user.id);
+        });
     }, []);
 
+    // 2. Arama Mantığı
     useEffect(() => {
-        if (!query.trim()) {
-            setResults([]);
-            setLoading(false);
-            return;
-        }
-
-        setLoading(true);
-        const timeoutId = setTimeout(async () => {
-            try {
-                const users = await FriendService.searchUsers(query);
-                const filtered = users.filter(u => u.id !== currentUserId); // Kendimizi gizle
-                setResults(filtered);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
+        const searchUsers = async () => {
+            if (query.trim().length === 0) {
+                setResults([]);
+                return;
             }
-        }, 300);
 
-        return () => clearTimeout(timeoutId);
+            if (!currentUserId) return;
+
+            setIsSearching(true);
+
+            // A. Kullanıcıları bul
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .ilike('username', `%${query}%`)
+                .limit(5);
+
+            const filteredProfiles = profiles?.filter(u => u.id !== currentUserId) || [];
+
+            // B. Bu kullanıcılara daha önce istek atmış mıyız kontrol et
+            if (filteredProfiles.length > 0) {
+                const targetIds = filteredProfiles.map(u => u.id);
+
+                const { data: existingRequests } = await supabase
+                    .from('friends')
+                    .select('receiver_id')
+                    .eq('sender_id', currentUserId)
+                    .eq('status', 'pending')
+                    .in('receiver_id', targetIds);
+
+                // İstek atılmış olanların ID'lerini bir kümeye (Set) koy
+                const pendingSet = new Set(existingRequests?.map(r => r.receiver_id));
+                setSentRequestIds(pendingSet);
+            }
+
+            setResults(filteredProfiles);
+            setIsSearching(false);
+        };
+
+        const timeout = setTimeout(searchUsers, 300);
+        return () => clearTimeout(timeout);
     }, [query, currentUserId]);
 
-    const handleAdd = async (userId: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Satıra tıklamayı engelle (Sadece butona basılsın)
-        setPendingUsers(prev => new Set(prev).add(userId));
+    // 3. Arkadaş Ekleme (İstek Gönderme)
+    const handleAdd = async (targetUserId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!currentUserId) return alert("Please login first.");
+
+        // UI'ı hemen güncelle (Kullanıcı beklemesin)
+        setSentRequestIds(prev => { const n = new Set(prev); n.add(targetUserId); return n; });
+
         try {
-            await FriendService.sendFriendRequest(userId);
+            await FriendService.sendFriendRequest(currentUserId, targetUserId);
         } catch (err) {
-            alert("Hata.");
-            setPendingUsers(prev => { const n = new Set(prev); n.delete(userId); return n; });
+            console.error(err);
+            alert("Error sending request.");
+            // Hata olursa geri al
+            setSentRequestIds(prev => { const n = new Set(prev); n.delete(targetUserId); return n; });
         }
     };
 
-    const handleCancel = async (userId: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Satıra tıklamayı engelle
-        setPendingUsers(prev => { const n = new Set(prev); n.delete(userId); return n; });
-        try {
-            await FriendService.cancelFriendRequest(userId);
-        } catch (err) {
-            alert("Hata.");
-            setPendingUsers(prev => new Set(prev).add(userId));
-        }
-    };
+    // 4. İsteği İptal Etme (YENİ EKLENDİ)
+    const handleCancel = async (targetUserId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!currentUserId) return;
 
-    // --- YÖNLENDİRME FONKSİYONU ---
-    const handleUserClick = (userId: string) => {
-        setQuery(""); // Giderken aramayı kapat
-        navigate(`/user/${userId}`); // <--- PROFİLE GÖTÜREN KOD
+        // UI'ı hemen güncelle (Cancel butonunu kaldır)
+        setSentRequestIds(prev => { const n = new Set(prev); n.delete(targetUserId); return n; });
+
+        try {
+            await FriendService.cancelFriendRequest(currentUserId, targetUserId);
+        } catch (err) {
+            console.error(err);
+            alert("Error canceling request.");
+            // Hata olursa geri ekle
+            setSentRequestIds(prev => { const n = new Set(prev); n.add(targetUserId); return n; });
+        }
     };
 
     return (
-        <div className="w-full relative z-50">
+        <div ref={searchContainerRef} className="relative z-50">
 
-            {/* HEADER */}
-            <div className={`bg-gradient-to-r from-indigo-600 to-purple-700 p-6 shadow-xl transition-all duration-300 ${query ? 'rounded-t-3xl' : 'rounded-3xl'}`}>
-                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                    Find Friends 🔍
-                </h3>
+            {/* --- MOR ARAMA KUTUSU --- */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-700 p-6 rounded-3xl shadow-xl text-white">
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">🔍 Find Friends</h3>
 
                 <div className="relative">
                     <input
                         type="text"
-                        placeholder="Start typing username..."
+                        placeholder="Type a username..."
+                        className="w-full bg-white/10 border border-white/20 text-white placeholder-indigo-200 rounded-xl px-4 py-3 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-white/50 transition shadow-inner"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="w-full bg-white/10 border border-white/20 text-white placeholder-indigo-200 rounded-xl px-4 py-3 pl-10 focus:outline-none focus:bg-white/20 transition"
                     />
-                    <div className="absolute left-3 top-3.5 text-indigo-200">
-                        {loading ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                            <span>👤</span>
-                        )}
-                    </div>
-                    {query && (
-                        <button
-                            onClick={() => setQuery("")}
-                            className="absolute right-3 top-3 text-white/50 hover:text-white transition"
-                        >
-                            ✕
-                        </button>
+                    {isSearching && (
+                        <div className="absolute right-3 top-3.5 animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full"></div>
                     )}
                 </div>
             </div>
 
-            {/* SONUÇLAR LİSTESİ */}
-            {query && (
-                <div className="bg-white border-x border-b border-gray-200 rounded-b-3xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 absolute w-full">
-                    <div className="max-h-[300px] overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                        {results.length > 0 ? (
-                            results.map(user => {
-                                const isPending = pendingUsers.has(user.id);
+            {/* --- SONUÇLAR (BEYAZ SAYFA) --- */}
+            {query.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+
+                    {results.length > 0 ? (
+                        <div className="max-h-[300px] overflow-y-auto p-2">
+                            {results.map(user => {
+                                // Bu kullanıcıya istek atılmış mı?
+                                const isPending = sentRequestIds.has(user.id);
+
                                 return (
-                                    // --- İŞTE BURASI ÇOK ÖNEMLİ ---
                                     <div
                                         key={user.id}
-                                        onClick={() => handleUserClick(user.id)} // <--- 3. TIKLAYINCA GİT
-                                        className="flex items-center justify-between p-3 hover:bg-indigo-50 rounded-xl transition group cursor-pointer"
+                                        onClick={() => navigate(`/user/${user.id}`)}
+                                        className="flex items-center justify-between p-3 hover:bg-indigo-50 rounded-xl cursor-pointer group transition"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-md">
-                                                {user.avatar_url ? (
-                                                    <img src={user.avatar_url} className="w-full h-full rounded-full object-cover" />
-                                                ) : (
-                                                    user.username?.charAt(0).toUpperCase() || "?"
-                                                )}
+                                            <img
+                                                src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
+                                                className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                                alt={user.username}
+                                            />
+                                            <div>
+                                                <p className="font-bold text-gray-800">{user.username}</p>
+                                                <p className="text-xs text-gray-400">View Profile</p>
                                             </div>
-                                            <span className="font-bold text-gray-700 text-sm group-hover:text-indigo-600">
-                                                {user.username}
-                                            </span>
                                         </div>
 
-                                        {/* Butonlarda e.stopPropagation() olduğu için bunlar sayfayı değiştirmez */}
+                                        {/* DURUMA GÖRE BUTON (ADD veya CANCEL) */}
                                         {isPending ? (
                                             <button
                                                 onClick={(e) => handleCancel(user.id, e)}
-                                                className="text-xs bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition font-bold shadow-sm flex items-center gap-1"
+                                                className="bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1 border border-red-200"
                                             >
-                                                Cancel ✕
+                                                Cancel
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={(e) => handleAdd(user.id, e)}
-                                                className="text-xs bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg transition font-bold shadow-sm flex items-center gap-1"
+                                                className="bg-indigo-100 text-indigo-700 hover:bg-indigo-600 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition"
                                             >
                                                 Add +
                                             </button>
                                         )}
                                     </div>
                                 );
-                            })
-                        ) : (
-                            !loading && (
-                                <div className="p-4 text-center text-gray-400 text-sm">
-                                    No users found named "{query}"
-                                </div>
-                            )
-                        )}
-                    </div>
+                            })}
+                        </div>
+                    ) : (
+                        <div className="p-6 text-center text-gray-400">
+                            {!isSearching && <p>No users found named "{query}"</p>}
+                        </div>
+                    )}
                 </div>
             )}
+
         </div>
     );
 }

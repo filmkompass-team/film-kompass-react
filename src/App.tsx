@@ -38,6 +38,7 @@ function App() {
           <Route path="/recommendations" element={<RecommendationsPage />} />
           <Route path="/user/:userId" element={<PublicProfilePage />} />
           <Route path="/lists/:id" element={<ListDetailsPage />} />
+          <Route path="/user/:userId" element={<PublicProfilePage />} />
 
         </Routes>
       </div>
