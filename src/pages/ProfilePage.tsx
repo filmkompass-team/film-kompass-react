@@ -5,7 +5,7 @@ import { UserService } from "../services/userService";
 import UserSearch from "../components/UserSearch";
 
 
-const AVAILABLE_AVATARS = Array.from({ length: 24 }, (_, i) => `/src/assets/avatars/${i}.png`);
+const AVAILABLE_AVATARS = Array.from({ length: 24 }, (_, i) => `/avatars/${i}.png`);
 
 export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
