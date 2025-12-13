@@ -5,94 +5,71 @@ import { MovieService } from "../services/movieService";
 import type { Movie } from "../types/movie";
 import MovieCard from "../components/MovieCard";
 import supabase from "../utils/supabase";
+import AddMovieModal from "../components/AddMovieModal";
 
 export default function MyListsPage() {
   const { listType } = useParams<{ listType: string }>();
   const navigate = useNavigate();
+
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
-  const [activeList, setActiveList] = useState<
-    "favorites" | "watched" | "wishlist"
-  >("favorites");
+  const [user, setUser] = useState<any>(null);
+  const [activeList, setActiveList] = useState<"favorites" | "watched" | "wishlist">("favorites");
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        console.log("MyListsPage - User check:", user);
+        const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
-
         if (!user) {
-          console.log("MyListsPage - No user, redirecting to login");
           navigate("/login");
           return;
         }
       } catch (error) {
-        console.error("MyListsPage - Error checking user:", error);
+        console.error("Error checking user:", error);
         setError("Error checking authentication");
       }
     };
-
     checkUser();
   }, [navigate]);
 
-  // Sync activeList with URL parameter
   useEffect(() => {
     if (listType && listType !== activeList) {
       setActiveList(listType as "favorites" | "watched" | "wishlist");
     } else if (!listType) {
-      // If no listType in URL, redirect to favorites
       navigate("/my-lists/favorites", { replace: true });
     }
   }, [listType, activeList, navigate]);
 
   useEffect(() => {
     const fetchMoviesFromList = async () => {
-      console.log("MyListsPage - fetchMoviesFromList called with:", {
-        user: !!user,
-        listType: listType || activeList,
-      });
-
-      if (!user) {
-        console.log("MyListsPage - Missing user or listType, skipping fetch");
-        return;
-      }
+      if (!user) return;
       const currentListType = listType || activeList;
       try {
-        // Only show loading spinner on initial load, use transition for subsequent changes
         if (isInitialLoad.current) {
           setLoading(true);
         } else {
           setIsTransitioning(true);
         }
         setError(null);
-        console.log(
-          "MyListsPage - Starting to fetch movies from list:",
-          currentListType
-        );
 
-        // Get movie IDs from the list
         const movieIds = await UserListService.getMoviesFromList(
           currentListType as "favorites" | "watched" | "wishlist"
         );
 
-        console.log("MyListsPage - Movie IDs from list:", movieIds);
-
         if (movieIds.length === 0) {
-          console.log("MyListsPage - No movies in list");
           setMovies([]);
           setLoading(false);
           setIsTransitioning(false);
           return;
         }
 
-        // Fetch movie details for each ID
         const moviePromises = movieIds.map(async (movieId) => {
           try {
             return await MovieService.getMovieById(movieId);
@@ -103,14 +80,11 @@ export default function MyListsPage() {
         });
 
         const movieResults = await Promise.all(moviePromises);
-        const validMovies = movieResults.filter(
-          (movie): movie is Movie => movie !== null
-        );
+        const validMovies = movieResults.filter((movie): movie is Movie => movie !== null);
 
-        console.log("MyListsPage - Valid movies found:", validMovies.length);
         setMovies(validMovies);
       } catch (error) {
-        console.error("MyListsPage - Error fetching movies from list:", error);
+        console.error("Error fetching movies:", error);
         setError("Failed to load movies from your list.");
       } finally {
         isInitialLoad.current = false;
@@ -127,31 +101,22 @@ export default function MyListsPage() {
   const getListTitle = () => {
     const currentListType = listType || activeList;
     switch (currentListType) {
-      case "favorites":
-        return "❤️ My Favorites";
-      case "watched":
-        return "✅ Watched Movies";
-      case "wishlist":
-        return "📝 My Wishlist";
-      default:
-        return "My Lists";
+      case "favorites": return "❤️ My Favorites";
+      case "watched": return "✅ Watched Movies";
+      case "wishlist": return "📝 My Wishlist";
+      default: return "My Lists";
     }
   };
 
   const getListDescription = () => {
     const currentListType = listType || activeList;
     switch (currentListType) {
-      case "favorites":
-        return "Movies you've marked as favorites";
-      case "watched":
-        return "Movies you've watched";
-      case "wishlist":
-        return "Movies you want to watch";
-      default:
-        return "Your personal movie lists";
+      case "favorites": return "Movies you've marked as favorites";
+      case "watched": return "Movies you've watched";
+      case "wishlist": return "Movies you want to watch";
+      default: return "Your personal movie lists";
     }
   };
-
 
   if (loading) {
     return (
@@ -171,10 +136,7 @@ export default function MyListsPage() {
           <div className="text-6xl mb-4">😞</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-          >
+          <button onClick={() => window.location.reload()} className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
             Try Again
           </button>
         </div>
@@ -185,16 +147,21 @@ export default function MyListsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 page-transition">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 list-transition">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {getListTitle()}
-          </h1>
-          <p className="text-xl text-gray-600">{getListDescription()}</p>
-
+        <div className="mb-8 list-transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              {getListTitle()}
+            </h1>
+            <p className="text-xl text-gray-600">{getListDescription()}</p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg flex items-center gap-2"
+          >
+            + Add Movie
+          </button>
         </div>
 
-        {/* Transition Loading Indicator */}
         {isTransitioning && (
           <div className="flex justify-center items-center py-8">
             <div className="flex items-center space-x-2">
@@ -204,16 +171,19 @@ export default function MyListsPage() {
           </div>
         )}
 
-        {/* Movies Grid */}
         {!isTransitioning && movies.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-all duration-300 grid-transition">
-            {movies.map((movie) => (
-              <MovieCard
-                key={movie.tmdb_id}
-                movie={movie}
-                onClick={(movie) => navigate(`/movie/${movie.tmdb_id}`)}
-              />
-            ))}
+            {movies.map((movie) => {
+              // HATA ÇÖZÜMÜ: 'tmdb_id' yoksa 'id'yi kullan, TypeScript'e 'any' diyerek güven ver.
+              const validId = movie.tmdb_id || (movie as any).id;
+              return (
+                <MovieCard
+                  key={validId}
+                  movie={movie}
+                  onClick={() => navigate(`/movie/${validId}`)}
+                />
+              );
+            })}
           </div>
         ) : !isTransitioning && movies.length === 0 ? (
           <div className="text-center py-12 transition-all duration-300 list-transition">
@@ -226,17 +196,27 @@ export default function MyListsPage() {
               No movies in your {listType || activeList} list yet
             </h3>
             <p className="text-gray-600 mb-6">
-              Start adding movies to your {listType || activeList} list by
-              browsing our collection.
+              Start adding movies to your {listType || activeList} list.
             </p>
             <button
-              onClick={() => navigate("/movies")}
+              onClick={() => setIsModalOpen(true)}
               className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 font-medium transform hover:scale-105"
             >
-              Browse Movies
+              Add Your First Movie
             </button>
           </div>
         ) : null}
+
+        {isModalOpen && (
+          <AddMovieModal
+            listType={listType || activeList}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={() => {
+              setIsModalOpen(false);
+              window.location.reload();
+            }}
+          />
+        )}
       </div>
     </div>
   );

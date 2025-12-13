@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import supabase from "./utils/supabase";
 import ProfilePage from "./pages/ProfilePage";
 import RecommendationsPage from './pages/RecommendationsPage';
+import PublicProfilePage from "./pages/PublicProfilePage";
+import ListDetailsPage from "./pages/ListDetailsPage";
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/recommendations" element={<RecommendationsPage />} />
+          <Route path="/user/:userId" element={<PublicProfilePage />} />
+          <Route path="/lists/:id" element={<ListDetailsPage />} />
 
         </Routes>
       </div>
@@ -45,7 +49,7 @@ function AuthListener() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const { data: { subscription}} = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         navigate("/update-password");
       }

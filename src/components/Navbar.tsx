@@ -102,7 +102,7 @@ export default function Navbar() {
                 // Logo görselinizin boyutunu TailWind CSS ile ayarlayın
                 className="h-12 sm:h-16 w-auto"
               />
-              
+
             </div>
           </div>
 
