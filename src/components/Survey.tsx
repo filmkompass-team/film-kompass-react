@@ -40,16 +40,16 @@ const POPULATIONS = [
   { key : "festival", label: "🏆 Festival Favorites (Award-winning)"},
   { key :  "any", label : "😐 No Preference"}
 ];
-  
 
-export default function Survey({ onSubmit }: Props) {
+
+export default function Survey({ initial, onSubmit }: Props) {
   const [answers, setAnswers] = useState<SurveyAnswers>({
-    mood: "",
-    socialContext: "",
-    year: undefined,
-    duration: undefined,
-    region: undefined,
-    population: undefined,
+    mood: initial?.mood ?? "",
+    socialContext: initial?.socialContext ?? "",
+    year: initial?.year,
+    duration: initial?.duration,
+    region: initial?.region,
+    population: initial?.population,
   });
 
 // Submit Control
@@ -71,7 +71,6 @@ export default function Survey({ onSubmit }: Props) {
     }
 
     onSubmit(answers);
-    console.log("All good!", answers);
   };
 
 

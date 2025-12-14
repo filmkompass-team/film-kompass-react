@@ -9,9 +9,6 @@ import MyListsPage from "./pages/MyListsPage";
 import SurveyPage from "./pages/SurveyPage";
 import UpdatePasswordPage from "./pages/UpdatePasswordPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import supabase from "./utils/supabase";
 import ProfilePage from "./pages/ProfilePage";
 import RecommendationsPage from './pages/RecommendationsPage';
 import PublicProfilePage from "./pages/PublicProfilePage";
@@ -38,28 +35,10 @@ function App() {
           <Route path="/recommendations" element={<RecommendationsPage />} />
           <Route path="/user/:userId" element={<PublicProfilePage />} />
           <Route path="/lists/:id" element={<ListDetailsPage />} />
-          <Route path="/user/:userId" element={<PublicProfilePage />} />
-
         </Routes>
       </div>
     </BrowserRouter>
   );
 }
 
-function AuthListener() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        navigate("/update-password");
-      }
-    });
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  return null;
-}
 export default App;

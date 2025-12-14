@@ -18,7 +18,6 @@ export default function ListDetailsPage() {
 
   useEffect(() => {
     if (id) {
-      console.log("🔍 ListDetailsPage - Fetching list with ID:", id);
       fetchDetails();
     }
   }, [id]);
@@ -27,56 +26,42 @@ export default function ListDetailsPage() {
     setLoading(true);
     setError(null);
     try {
-      console.log("📡 Calling ListService.getListDetails with ID:", id);
-      
       const result = await ListService.getListDetails(id!);
-      
-      console.log("✅ ListService result:", result);
-      
+
       if (!result.list) {
-        console.error("❌ List not found or no access");
         setError("List not found or you don't have access to it.");
         setList(null);
         setMovies([]);
         setLoading(false);
         return;
       }
-      
+
       setList(result.list);
       const items = result.items || [];
-      
-      console.log("📋 List items:", items);
 
       // Movie ID'leri al
       const movieIds = items.map((i: any) => i.movie_id);
 
       if (movieIds.length === 0) {
-        console.log("📭 No movies in this list");
         setMovies([]);
         setLoading(false);
         return;
       }
 
-      console.log("🎬 Fetching movie details for IDs:", movieIds);
-
       // Film detaylarını getir
       const moviePromises = movieIds.map(async (movieId: number) => {
         try {
           return await MovieService.getMovieById(movieId);
-        } catch (err) {
-          console.error(`Error fetching movie ${movieId}:`, err);
+        } catch {
           return null;
         }
       });
 
       const results = await Promise.all(moviePromises);
       const validMovies = results.filter((movie): movie is Movie => movie !== null);
-      
-      console.log("✅ Successfully loaded movies:", validMovies.length);
       setMovies(validMovies);
 
     } catch (error) {
-      console.error("❌ Error in fetchDetails:", error);
       setError(`Error loading list: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);

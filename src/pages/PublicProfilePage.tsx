@@ -8,7 +8,6 @@ export default function PublicProfilePage() {
     const navigate = useNavigate();
 
     const [profile, setProfile] = useState<any>(null);
-    const [lists, setLists] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [friendStatus, setFriendStatus] = useState<string | null>(null);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -44,7 +43,6 @@ export default function PublicProfilePage() {
 
             if (status === 'accepted') {
                 const { data: userLists } = await supabase.from('lists').select('*, list_items(count)').eq('owner_id', userId);
-                setLists(userLists || []);
                 let count = 0;
                 (userLists || []).forEach((l: any) => { if (l.list_items && l.list_items[0]) count += l.list_items[0].count; });
                 setTotalMovies(count);
@@ -79,12 +77,27 @@ export default function PublicProfilePage() {
     };
 
     const handleRemoveFriend = async () => {
+        if (!currentUserId || !userId) return;
         if (confirm("Unfriend this user?")) {
-            setFriendStatus(null);
+            try {
+                // Arkadaşlık kaydını bul ve sil
+                const friends = await FriendService.getFriends(currentUserId);
+                const friendship = friends.find((f: any) =>
+                    f.friend?.id === userId || f.receiver_id === userId
+                );
+                if (friendship) {
+                    await FriendService.removeFriend(friendship.id);
+                }
+                setFriendStatus(null);
+                // Sayfayı yenile
+                loadPageData();
+            } catch (error) {
+                alert("Failed to remove friend.");
+            }
         }
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    if (loading) return <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div></div>;
     if (!profile) return <div className="p-10 text-center">User not found.</div>;
 
     const isFriend = friendStatus === 'accepted';
@@ -123,9 +136,8 @@ export default function PublicProfilePage() {
                     </div>
                 ) : (
                     <div className="space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center"><span className="text-4xl mb-3 block">📺</span><div className="text-3xl font-bold text-gray-900">{totalMovies}</div><div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Movies Watched</div></div>
-                            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center"><span className="text-4xl mb-3 block">🍿</span><div className="text-3xl font-bold text-gray-900">Unknown</div><div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Fav Genre</div></div>
                             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center"><span className="text-4xl mb-3 block">⭐</span><div className="text-3xl font-bold text-gray-900">0</div><div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Total Ratings</div></div>
                         </div>
                         <div className="bg-white rounded-3xl shadow-sm p-8 border border-gray-100"><h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-800">👥 Friends ({friendList.length})</h3><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">{friendList.map(f => (<div key={f.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl hover:bg-purple-50 transition cursor-pointer" onClick={() => navigate(`/user/${f.friend?.id}`)}><img src={f.friend?.avatar_url || "https://via.placeholder.com/40"} className="w-8 h-8 rounded-full object-cover" /><span className="font-bold text-gray-700 truncate">{f.friend?.username}</span></div>))}</div></div>

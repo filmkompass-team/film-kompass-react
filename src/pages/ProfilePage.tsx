@@ -15,24 +15,24 @@ export default function ProfilePage() {
   const [username, setUsername] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [isSavingUsername, setIsSavingUsername] = useState<boolean>(false);
+  const [isEditingUsername, setIsEditingUsername] = useState<boolean>(false);
+  const [originalUsername, setOriginalUsername] = useState<string>("");
   const [openMenuListId, setOpenMenuListId] = useState<string | null>(null);
 
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
 
+  // Loading State
+  const [isPageLoading, setIsPageLoading] = useState<boolean>(true);
+
   // Statistics State
   const [totalWatched, setTotalWatched] = useState<number>(0);
-  const [favoriteGenre, setFavoriteGenre] = useState<string>("Unknown");
   const [totalRatings, setTotalRatings] = useState<number>(0);
-
-  // Data State
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [friendList, setFriendList] = useState<any[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
 
   // List State
   const [customLists, setCustomLists] = useState<any[]>([]);
-  const [loadingLists, setLoadingLists] = useState(false);
 
   // Share Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,70 +42,29 @@ export default function ProfilePage() {
   const [selectedListCollaborators, setSelectedListCollaborators] = useState<string[]>([]);
 
   // ---- DATA FETCHING ----
-  const loadProfileData = async (userId: string) => {
-    // 1. Statistics
-    const { data: ratings } = await supabase
-      .from("ratings")
-      .select("id")
-      .eq("user_id", userId);
-    setTotalRatings(ratings?.length || 0);
-
-    
-
-    const { data: watched } = await supabase
-      .from("user_movie_lists")
-      .select("movie_id")
-      .eq("user_id", userId)
-      .eq("list_type", "watched");
-    setTotalWatched(watched?.length || 0);
-
-    // 2. Favorite Genre
-    const { data: genreData } = await supabase
-      .from("user_movie_lists")
-      .select("movie_id, movies(genres)")
-      .eq("user_id", userId)
-      .eq("list_type", "watched");
-
-    if (genreData) {
-      const genreCount: Record<string, number> = {};
-      genreData.forEach((item: any) => {
-        const genres = item.movies?.genres;
-        if (Array.isArray(genres)) {
-          genres.forEach(
-            (g: string) => (genreCount[g] = (genreCount[g] || 0) + 1)
-          );
-        }
-      });
-      setFavoriteGenre(
-        Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-          "Unknown"
-      );
-    }
-
-    // 3. Recent Activity
-    const { data: recent } = await supabase
-      .from("user_movie_lists")
-      .select("movie_id, list_type, created_at, movies(title, poster_url)")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(5);
-    setRecentActivity(recent || []);
-
-    // 4. Friends & Requests
-    const friends = await FriendService.getFriends(userId);
-    setFriendList(friends || []);
-    const requests = await FriendService.getIncomingRequests(userId);
-    setIncomingRequests(requests || []);
-
-    // 5. Custom Lists
-    setLoadingLists(true);
+  const loadProfileData = async (userId: string, isInitialLoad = false) => {
     try {
-      const myLists = await ListService.getMyLists();
-      setCustomLists(myLists);
+      // Tüm verileri paralel olarak çek
+      const [ratingsResult, watchedResult, friends, requests, myLists] = await Promise.all([
+        supabase.from("ratings").select("id").eq("user_id", userId),
+        supabase.from("user_movie_lists").select("movie_id").eq("user_id", userId).eq("list_type", "watched"),
+        FriendService.getFriends(userId),
+        FriendService.getIncomingRequests(userId),
+        ListService.getMyLists().catch(() => [])
+      ]);
+
+      // Tüm state'leri tek seferde güncelle
+      setTotalRatings(ratingsResult.data?.length || 0);
+      setTotalWatched(watchedResult.data?.length || 0);
+      setFriendList(friends || []);
+      setIncomingRequests(requests || []);
+      setCustomLists(myLists || []);
     } catch (error) {
-      console.error("List fetch error:", error);
+      console.error("Profile data fetch error:", error);
     } finally {
-      setLoadingLists(false);
+      if (isInitialLoad) {
+        setIsPageLoading(false);
+      }
     }
   };
 
@@ -126,14 +85,14 @@ export default function ProfilePage() {
 
       setUser(user);
 
-      setUsername(
-        user.user_metadata?.username || user.email?.split("@")[0] || "User"
-      );
+      const initialUsername = user.user_metadata?.username || user.email?.split("@")[0] || "User";
+      setUsername(initialUsername);
+      setOriginalUsername(initialUsername);
       setAvatarUrl(
         user.user_metadata?.avatar_url || "https://via.placeholder.com/150"
       );
 
-      await loadProfileData(user.id);
+      await loadProfileData(user.id, true);
     };
     init();
   }, []);
@@ -146,6 +105,8 @@ export default function ProfilePage() {
     try {
       await UserService.updateUsername(user.id, username);
       await supabase.auth.refreshSession();
+      setOriginalUsername(username);
+      setIsEditingUsername(false);
       alert("Username updated!");
     } catch (error) {
       console.error("Username update failed", error);
@@ -153,6 +114,11 @@ export default function ProfilePage() {
     } finally {
       setIsSavingUsername(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setUsername(originalUsername);
+    setIsEditingUsername(false);
   };
 
   const handleAvatarSelect = async (newUrl: string) => {
@@ -239,10 +205,10 @@ export default function ProfilePage() {
     setIsModalOpen(true);
   };
 
-  if (!user)
+  if (!user || isPageLoading)
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
       </div>
     );
 
@@ -271,24 +237,41 @@ export default function ProfilePage() {
               <h1 className="text-4xl font-bold">{username}</h1>
               <p className="text-indigo-100/80 text-sm">{user.email}</p>
             </div>
-            <form
-              onSubmit={handleUsernameSave}
-              className="flex gap-3 justify-center md:justify-start"
-            >
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2 w-full md:w-64"
-              />
-              <button
-                type="submit"
-                disabled={isSavingUsername}
-                className="px-5 py-2 rounded-xl bg-white text-indigo-700 font-bold hover:bg-gray-100"
+            {isEditingUsername ? (
+              <form
+                onSubmit={handleUsernameSave}
+                className="flex gap-3 justify-center md:justify-start"
               >
-                Save
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={isSavingUsername}
+                  className="px-5 py-2 rounded-xl bg-white text-indigo-700 font-bold hover:bg-gray-100 disabled:opacity-50"
+                >
+                  {isSavingUsername ? "..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2 rounded-xl bg-white/20 text-white font-bold hover:bg-white/30 transition"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => setIsEditingUsername(true)}
+                className="px-5 py-2 rounded-xl bg-white/20 text-white font-bold hover:bg-white/30 transition flex items-center gap-2"
+              >
+                ✏️ Edit Username
               </button>
-            </form>
+            )}
           </div>
         </div>
 
@@ -296,7 +279,7 @@ export default function ProfilePage() {
           {/* LEFT COLUMN (Main Content) */}
           <div className="lg:col-span-8 space-y-10">
             {/* 1. STATISTICS */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <StatsCard title="Watched" value={totalWatched} icon="🎬" />
               <StatsCard title="Ratings" value={totalRatings} icon="⭐" />
             </div>

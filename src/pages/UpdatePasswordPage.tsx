@@ -33,8 +33,8 @@ export default function UpdatePasswordPage() {
       navigate("/login", {
         state: { message: "Password updated succesfully. Please login." },
       });
-    } catch (err: any) {
-      setError(err.message || "Failed to update password.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update password.");
     } finally {
       setLoading(false);
     }

@@ -100,7 +100,7 @@ export default function MyListsPage() {
             <button onClick={() => setIsModalOpen(true)} className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 font-medium transform hover:scale-105">Add Your First Movie</button>
           </div>
         ) : null}
-        {isModalOpen && (<AddMovieModal listType={listType || activeList} onClose={() => setIsModalOpen(false)} onSuccess={() => { setIsModalOpen(false); window.location.reload(); }} />)}
+        {isModalOpen && (<AddMovieModal listType={(listType as "favorites" | "watched" | "wishlist") || activeList} onClose={() => setIsModalOpen(false)} onSuccess={() => { setIsModalOpen(false); window.location.reload(); }} />)}
       </div>
     </div>
   );

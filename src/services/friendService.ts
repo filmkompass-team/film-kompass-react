@@ -70,10 +70,8 @@ export const FriendService = {
         return data ? data.status : null;
     },
 
-    // 6. Kabul Et 
-    // DÜZELTME: Senin ProfilePage.tsx kodun 2 parametre gönderiyor (id, requesterId).
-    // Burayı 2 parametre alacak şekilde güncelledim ki hata vermesin.
-    async acceptFriendRequest(friendshipId: string, requesterId: string) {
+    // 6. Kabul Et
+    async acceptFriendRequest(friendshipId: string, _requesterId?: string) {
         const { error } = await supabase.from('friends').update({ status: 'accepted' }).eq('id', friendshipId);
         if (error) throw error;
     },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import supabase from '../utils/supabase';
 import { MovieService } from '../services/movieService';
@@ -7,7 +7,7 @@ import MovieCard from '../components/MovieCard';
 
 // NOT: Navbar'ı buradan kaldırdık çünkü App.tsx'te zaten var.
 
-const RecommendationsPage: React.FC = () => {
+const RecommendationsPage = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -56,19 +56,19 @@ const RecommendationsPage: React.FC = () => {
     // DÜZELTME 1: Arka planı 'Movies.tsx' ile aynı yaptık (Açık renk gradient)
     // DÜZELTME 2: Yazı rengini koyu yaptık (text-gray-900)
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 page-transition">
-      
+
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Başlık ve Geri Dön Butonu */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
-          <button 
-            onClick={() => navigate(-1)} 
+          <button
+            onClick={() => navigate(-1)}
             // DÜZELTME 3: Buton renklerini açık temaya uygun hale getirdik
             className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2 self-start sm:self-auto font-medium"
           >
             <span className="text-xl">←</span> Go back
           </button>
-          
+
           <div className="flex items-center gap-2">
             <span className="text-3xl" role="img" aria-label="sparkles">✨</span>
             <div>
@@ -95,7 +95,7 @@ const RecommendationsPage: React.FC = () => {
             <p className="text-gray-600 max-w-md mx-auto">
               Please rate or add more movies to your lists for us to provide personalized recommendations.
             </p>
-            <button 
+            <button
                 onClick={() => navigate('/')}
                 className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition shadow-md"
             >
@@ -105,9 +105,9 @@ const RecommendationsPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fade-in">
             {movies.map((movie) => (
-              <MovieCard 
-                key={movie.tmdb_id} 
-                movie={movie} 
+              <MovieCard
+                key={movie.tmdb_id}
+                movie={movie}
                 onClick={handleMovieClick}
               />
             ))}
