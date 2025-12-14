@@ -483,7 +483,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* 4. FRIEND LIST (GÜNCELLENDİ) */}
+            {/* 4. FRIEND LIST */}
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <h3 className="text-xl font-bold mb-4">
                 👥 Friends ({friendList.length})

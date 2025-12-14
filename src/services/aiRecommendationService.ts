@@ -27,11 +27,6 @@ export class AiRecommendationService {
     return this.cache.get(query);
   }
 
-  /**
-   * Generates AI recommendations for a user
-   * @param userQuery User's natural language query
-   * @returns AI recommendations
-   */
   static async getRecommendations(
     userQuery: string
   ): Promise<AiRecommendationResponse> {
