@@ -88,7 +88,6 @@ export default function MyListsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-all duration-300 grid-transition">
             {movies.map((movie) => (
               <MovieCard
-                // HATA ÇÖZÜLDÜ: any cast ile id'ye erişim
                 key={movie.tmdb_id || (movie as any).id}
                 movie={movie}
                 onClick={(movie) => navigate(`/movie/${movie.tmdb_id || (movie as any).id}`)}
