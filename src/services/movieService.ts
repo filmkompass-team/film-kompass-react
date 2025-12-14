@@ -162,4 +162,3 @@ static async getRecommendationsForUser(userId: string): Promise<Movie[]> {
     }
   }
 }
-

@@ -1,63 +1,92 @@
 import supabase from "../utils/supabase";
 
-export interface Profile {
-    id: string;
-    username: string;
-    avatar_url: string | null;
-}
-
 export const FriendService = {
-    // 🔍 Kullanıcı Arama 
-    async searchUsers(query: string) {
-        if (!query) return [];
-
-        // 'profiles' tablosunda arama yap
+    // 1. Arkadaşları Getir
+    async getFriends(userId: string) {
         const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .ilike('username', `%${query}%`)
-            .limit(5);
+            .from('friends')
+            .select('*, receiver:receiver_id(username, avatar_url), sender:sender_id(username, avatar_url)')
+            .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+            .eq('status', 'accepted');
 
-        if (error) {
-            console.error("Arama hatası:", error);
-            return [];
-        }
-        return data as Profile[];
+        if (error) return [];
+
+        return data.map(f => ({
+            ...f,
+            friend: f.sender_id === userId ? f.receiver : f.sender,
+            receiver_id: f.sender_id === userId ? f.receiver_id : f.sender_id
+        }));
     },
 
-    // ➕ Arkadaş İsteği Gönder
-    async sendFriendRequest(receiverId: string) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Giriş yapmalısın!");
+    // 2. Gelen İstekleri Getir (ProfilePage.tsx bunu çağırıyor)
+    async getIncomingRequests(userId: string) {
+        const { data, error } = await supabase
+            .from('friends')
+            .select('*, requester:sender_id(id, username, avatar_url)')
+            .eq('receiver_id', userId)
+            .eq('status', 'pending');
+
+        if (error) return [];
+        return data;
+    },
+
+    // 3. İstek Gönder
+    async sendFriendRequest(senderId: string, receiverId: string) {
+        const { data } = await supabase
+            .from('friends')
+            .select('*')
+            .or(`and(sender_id.eq.${senderId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${senderId})`)
+            .maybeSingle();
+
+        if (data) return;
 
         const { error } = await supabase
-            .from('friendships')
-            .insert({
-                requester_id: user.id,
-                receiver_id: receiverId,
-                status: 'pending'
-            });
+            .from('friends')
+            .insert({ sender_id: senderId, receiver_id: receiverId, status: 'pending' });
 
         if (error) throw error;
     },
 
-    // 📋 Arkadaş Listesini Getir 
-    async getFriends(userId: string) {
-        const { data, error } = await supabase
-            .from('friendships')
-            .select(`
-        id,
-        status,
-        receiver:receiver_id (username, avatar_url)
-      `)
-            .eq('requester_id', userId);
+    // 4. İsteği İptal Et
+    async cancelFriendRequest(senderId: string, receiverId: string) {
+        const { error } = await supabase
+            .from('friends')
+            .delete()
+            .eq('sender_id', senderId)
+            .eq('receiver_id', receiverId)
+            .eq('status', 'pending');
 
+        if (error) throw error;
+    },
 
+    // 5. Durum Kontrolü
+    async checkFriendshipStatus(currentUserId: string, targetUserId: string) {
+        const { data } = await supabase
+            .from('friends')
+            .select('status')
+            .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${currentUserId})`)
+            .maybeSingle();
 
-        if (error) {
-            console.error("Arkadaş listesi hatası:", error);
-            return [];
-        }
-        return data;
+        return data ? data.status : null;
+    },
+
+    // 6. Kabul Et 
+    // DÜZELTME: Senin ProfilePage.tsx kodun 2 parametre gönderiyor (id, requesterId).
+    // Burayı 2 parametre alacak şekilde güncelledim ki hata vermesin.
+    async acceptFriendRequest(friendshipId: string, requesterId: string) {
+        const { error } = await supabase.from('friends').update({ status: 'accepted' }).eq('id', friendshipId);
+        if (error) throw error;
+    },
+
+    // 7. Reddet
+    async rejectFriendRequest(friendshipId: string) {
+        const { error } = await supabase.from('friends').delete().eq('id', friendshipId);
+        if (error) throw error;
+    },
+
+    // 8. Arkadaşlıktan Çıkar
+    async removeFriend(friendshipId: string) {
+        const { error } = await supabase.from('friends').delete().eq('id', friendshipId);
+        if (error) throw error;
     }
 };
