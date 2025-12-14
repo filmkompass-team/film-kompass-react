@@ -26,7 +26,7 @@ export const ListService = {
 
     const { data: myLists } = await supabase
       .from("lists")
-      .select("*, list_collaborators(count), list_items(count)")
+      .select("*, list_collaborators(user_id, profiles(username)), list_items(count)")
       .eq("owner_id", user.id);
 
     const { data: sharedWithMe } = await supabase

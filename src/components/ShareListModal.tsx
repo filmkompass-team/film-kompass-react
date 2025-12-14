@@ -4,11 +4,12 @@ import { ListService } from '../services/listService';
 interface Props {
     listId: string;
     friends: any[]; // ProfilePage'den gelen arkadaş listesi
+    existingCollaborators: string[];
     onClose: () => void;
     onSuccess: () => void;
 }
 
-export default function ShareListModal({ listId, friends, onClose, onSuccess }: Props) {
+export default function ShareListModal({ listId, friends, existingCollaborators, onClose, onSuccess }: Props) {
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
     const handleShare = async (friendId: string, friendName: string) => {
@@ -16,12 +17,12 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
 
         try {
             await ListService.addCollaborator(listId, friendId);
-            alert(`${friendName} listeye eklendi! ✅`);
+            alert(`${friendName} added to the list! ✅`);
             onSuccess(); // Listeyi yenilemesi için ana sayfaya sinyal gönder
             onClose();   // Modalı kapat
         } catch (err) {
             console.error(err);
-            alert('Bir hata oluştu veya bu kişi zaten ekli.');
+            alert('An error occurred or this person is already added.');
         } finally {
             setLoadingId(null);
         }
@@ -43,6 +44,7 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
                             // Arkadaşın verisi friendship objesinin içindeki 'receiver' veya 'sender' alanında olabilir.
                             // ProfilePage'deki yapıya göre 'receiver' kullanıyoruz:
                             const friend = friendship.friend;
+                            const isAlreadyInvited = existingCollaborators.includes(friendship.receiver_id);
 
                             if (!friend) return null;
 
@@ -57,13 +59,13 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
 
                                     <button
                                         onClick={() => handleShare(friendship.receiver_id, friend.username)}
-                                        disabled={loadingId === friendship.receiver_id}
+                                        disabled={loadingId === friendship.receiver_id || isAlreadyInvited}
                                         style={{
                                             ...modalStyles.inviteBtn,
                                             opacity: loadingId === friendship.receiver_id ? 0.7 : 1
                                         }}
                                     >
-                                        {loadingId === friend.id ? 'Adding...' : 'Invite'}
+                                        {loadingId === friend.id ? 'Adding...' : isAlreadyInvited ? 'Added' : 'Invite'}
                                     </button>
                                 </div>
                             );

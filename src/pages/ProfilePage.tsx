@@ -38,6 +38,9 @@ export default function ProfilePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
 
+
+  const [selectedListCollaborators, setSelectedListCollaborators] = useState<string[]>([]);
+
   // ---- DATA FETCHING ----
   const loadProfileData = async (userId: string) => {
     // 1. Statistics
@@ -46,6 +49,8 @@ export default function ProfilePage() {
       .select("id")
       .eq("user_id", userId);
     setTotalRatings(ratings?.length || 0);
+
+    
 
     const { data: watched } = await supabase
       .from("user_movie_lists")
@@ -229,6 +234,8 @@ export default function ProfilePage() {
 
   const handleOpenShareModal = (listId: string) => {
     setSelectedListId(listId);
+    const selectedList = customLists.find(l => l.id === listId);
+    setSelectedListCollaborators(selectedList?.list_collaborators?.map((c: any) => c.user_id) || []);
     setIsModalOpen(true);
   };
 
@@ -291,12 +298,6 @@ export default function ProfilePage() {
             {/* 1. STATISTICS */}
             <div className="grid grid-cols-3 gap-4">
               <StatsCard title="Watched" value={totalWatched} icon="🎬" />
-              <StatsCard
-                title="Fav Genre"
-                value={favoriteGenre}
-                icon="🍿"
-                truncate
-              />
               <StatsCard title="Ratings" value={totalRatings} icon="⭐" />
             </div>
 
@@ -421,9 +422,21 @@ export default function ProfilePage() {
                       <h4 className="font-bold text-gray-800 truncate pr-4">
                         {list.title}
                       </h4>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-400 font-bold uppercase tracking-wider">
-                        <span>{list.list_items?.[0]?.count || 0} Items</span>
-                        {list.isCollaborative && <span>• Shared</span>}
+                      <div className="mt-2 space-y-1">
+                      <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                        {list.list_items?.[0]?.count || 0} Items
+                        </div>
+                          {list.list_collaborators?.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className="text-green-600">👥</span>
+                              <span className="text-green-600 font-medium">
+                                {list.list_collaborators?.map((c: any) =>
+                            c.profiles?.username
+                          ).join(",")}
+
+                              </span>
+                        </div>
+                          )}
                       </div>
                     </div>
 
@@ -560,6 +573,7 @@ export default function ProfilePage() {
         <ShareListModal
           listId={selectedListId}
           friends={friendList}
+          existingCollaborators={selectedListCollaborators}
           onClose={() => {
             setIsModalOpen(false);
             setSelectedListId(null);
