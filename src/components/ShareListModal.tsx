@@ -42,7 +42,7 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
                         {friends.map((friendship) => {
                             // Arkadaşın verisi friendship objesinin içindeki 'receiver' veya 'sender' alanında olabilir.
                             // ProfilePage'deki yapıya göre 'receiver' kullanıyoruz:
-                            const friend = friendship.receiver;
+                            const friend = friendship.friend;
 
                             if (!friend) return null;
 

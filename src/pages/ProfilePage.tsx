@@ -500,17 +500,17 @@ export default function ProfilePage() {
                       >
                         <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold overflow-hidden">
                           {/* Friend Avatar */}
-                          {f.receiver?.avatar_url ? (
+                          {f.friend?.avatar_url ? (
                             <img
-                              src={f.receiver.avatar_url}
+                              src={f.friend.avatar_url}
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            f.receiver?.username?.substring(0, 2).toUpperCase()
+                            f.friend?.username?.substring(0, 2).toUpperCase()
                           )}
                         </div>
                         <span className="font-bold text-gray-700 hover:text-indigo-600 transition">
-                          {f.receiver?.username}
+                          {f.friend?.username}
                         </span>
                       </div>
 
@@ -518,7 +518,7 @@ export default function ProfilePage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation(); // Profile gitmeyi engelle
-                          handleRemoveFriend(f.id, f.receiver?.username);
+                          handleRemoveFriend(f.id, f.friend?.username);
                         }}
                         className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition"
                         title="Arkadaşlıktan Çıkar"
