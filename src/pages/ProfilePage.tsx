@@ -546,30 +546,6 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-
-            {/* 5. RECENT ACTIVITY */}
-            <div>
-              <h3 className="text-2xl font-bold mb-4">📝 Recent Activity</h3>
-              <div className="space-y-3">
-                {recentActivity.map((item: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className="bg-white border border-gray-100 p-3 rounded-xl flex items-center gap-4"
-                  >
-                    <img
-                      src={item.movies?.poster_url}
-                      className="w-10 h-14 rounded object-cover"
-                    />
-                    <div>
-                      <p className="font-bold text-sm">{item.movies?.title}</p>
-                      <p className="text-xs text-gray-400">
-                        Added to {item.list_type}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* RIGHT COLUMN (Search) */}

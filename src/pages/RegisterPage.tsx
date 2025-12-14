@@ -5,6 +5,7 @@ import supabase from "../utils/supabase";
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -42,6 +43,13 @@ export default function RegisterPage() {
       return;
     }
 
+    if (username.trim().length < 3) {
+      setMessageType("error");
+      setMessage("❌ Username must be at least 3 characters long.");
+      setLoading(false);
+      return;
+    }
+
     // 3️⃣ Şifre kontrolleri
     if (password.length < 6) {
       setMessageType("error");
@@ -63,6 +71,9 @@ export default function RegisterPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/verified`, // localhost:5173/verified
+        data: {
+          username: username.trim(),
+        },
       },
     });
 
@@ -131,6 +142,16 @@ export default function RegisterPage() {
 
         {/* 📝 Kayıt formu */}
         <form onSubmit={handleSignup} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            minLength={3}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+
           <input
             type="email"
             placeholder="Email"
