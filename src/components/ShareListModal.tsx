@@ -31,12 +31,12 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
         <div style={modalStyles.overlay}>
             <div style={modalStyles.content}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ margin: 0 }}>Arkadaşını Seç</h3>
+                    <h3 style={{ margin: 0 }}>Choose Your Friend</h3>
                     <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
                 </div>
 
                 {friends.length === 0 ? (
-                    <p style={{ color: '#666' }}>Listenizde henüz hiç arkadaş yok.</p>
+                    <p style={{ color: '#666' }}>You don't have any friends yet.</p>
                 ) : (
                     <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                         {friends.map((friendship) => {
@@ -47,7 +47,7 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
                             if (!friend) return null;
 
                             return (
-                                <div key={friend.id} style={modalStyles.friendRow}>
+                                <div key={friendship.receiver_id} style={modalStyles.friendRow}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <div style={modalStyles.avatar}>
                                             {friend.username.substring(0, 2).toUpperCase()}
@@ -56,14 +56,14 @@ export default function ShareListModal({ listId, friends, onClose, onSuccess }: 
                                     </div>
 
                                     <button
-                                        onClick={() => handleShare(friend.id, friend.username)}
-                                        disabled={loadingId === friend.id}
+                                        onClick={() => handleShare(friendship.receiver_id, friend.username)}
+                                        disabled={loadingId === friendship.receiver_id}
                                         style={{
                                             ...modalStyles.inviteBtn,
-                                            opacity: loadingId === friend.id ? 0.7 : 1
+                                            opacity: loadingId === friendship.receiver_id ? 0.7 : 1
                                         }}
                                     >
-                                        {loadingId === friend.id ? 'Ekleniyor...' : 'Davet Et'}
+                                        {loadingId === friend.id ? 'Adding...' : 'Invite'}
                                     </button>
                                 </div>
                             );

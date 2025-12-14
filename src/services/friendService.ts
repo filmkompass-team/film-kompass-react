@@ -5,7 +5,7 @@ export const FriendService = {
     async getFriends(userId: string) {
         const { data, error } = await supabase
             .from('friends')
-            .select('*, receiver:receiver_id(username, avatar_url), sender:sender_id(username, avatar_url)')
+            .select('*, receiver:receiver_id(id, username, avatar_url), sender:sender_id(id, username, avatar_url)')
             .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
             .eq('status', 'accepted');
 
