@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [username, setUsername] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [isSavingUsername, setIsSavingUsername] = useState<boolean>(false);
+  const [openMenuListId, setOpenMenuListId] = useState<string | null>(null);
 
   // Avatar Modal State
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
@@ -75,7 +76,7 @@ export default function ProfilePage() {
       });
       setFavoriteGenre(
         Object.entries(genreCount).sort((a, b) => b[1] - a[1])[0]?.[0] ||
-        "Unknown"
+          "Unknown"
       );
     }
 
@@ -213,6 +214,22 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDeleteList = async (listId: string) => {
+    const ok = window.confirm("Are you sure you want to delete this list?");
+    if (!ok) return;
+
+    try {
+      await ListService.deleteList(listId);
+      // listeleri yeniden çek
+      if (user?.id) await loadProfileData(user.id);
+    } catch (err) {
+      console.error(err);
+      alert("Could not delete the list.");
+    } finally {
+      setOpenMenuListId(null);
+    }
+  };
+
   const handleOpenShareModal = (listId: string) => {
     setSelectedListId(listId);
     setIsModalOpen(true);
@@ -344,21 +361,65 @@ export default function ProfilePage() {
                   <Link
                     key={list.id}
                     to={`/lists/${list.id}`}
-                    className={`group bg-white border-2 border-dashed ${list.isCollaborative
-                      ? "border-blue-200 bg-blue-50"
-                      : "border-indigo-100"
-                      } p-5 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50 transition cursor-pointer relative flex flex-col justify-between`}
+                    className={`group bg-white border-2 border-dashed ${
+                      list.isCollaborative
+                        ? "border-blue-200 bg-blue-50"
+                        : "border-indigo-100"
+                    } p-5 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50 transition cursor-pointer relative flex flex-col justify-between`}
                   >
                     {/* Top Section */}
                     <div>
+                      {/* Shared badge (move left so it doesn't collide with menu) */}
                       {list.isCollaborative && (
                         <div
-                          className="absolute top-3 right-3 text-lg"
+                          className="absolute top-3 right-10 text-lg"
                           title="Shared with you"
                         >
                           👥
                         </div>
                       )}
+
+                      {/* Kebab menu (only for owner lists) */}
+                      {!list.isCollaborative && (
+                        <div className="absolute top-2 right-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setOpenMenuListId((prev) =>
+                                prev === list.id ? null : list.id
+                              );
+                            }}
+                            className="w-9 h-9 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-600"
+                            aria-label="List actions"
+                            title="Actions"
+                          >
+                            ⋮
+                          </button>
+
+                          {openMenuListId === list.id && (
+                            <div
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden"
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteList(list.id);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="text-3xl mb-2">📁</div>
                       <h4 className="font-bold text-gray-800 truncate pr-4">
                         {list.title}
@@ -503,9 +564,7 @@ export default function ProfilePage() {
                       className="w-10 h-14 rounded object-cover"
                     />
                     <div>
-                      <p className="font-bold text-sm">
-                        {item.movies?.title}
-                      </p>
+                      <p className="font-bold text-sm">{item.movies?.title}</p>
                       <p className="text-xs text-gray-400">
                         Added to {item.list_type}
                       </p>
@@ -559,10 +618,11 @@ export default function ProfilePage() {
                 <div
                   key={index}
                   onClick={() => handleAvatarSelect(avatar)}
-                  className={`cursor-pointer rounded-full overflow-hidden border-4 transition hover:scale-105 ${avatarUrl === avatar
-                    ? "border-indigo-600 scale-105"
-                    : "border-transparent hover:border-gray-200"
-                    }`}
+                  className={`cursor-pointer rounded-full overflow-hidden border-4 transition hover:scale-105 ${
+                    avatarUrl === avatar
+                      ? "border-indigo-600 scale-105"
+                      : "border-transparent hover:border-gray-200"
+                  }`}
                 >
                   <img
                     src={avatar}
@@ -586,9 +646,7 @@ function StatsCard({ title, value, icon, truncate }: any) {
       <p className={`text-2xl font-bold ${truncate ? "truncate" : ""}`}>
         {value}
       </p>
-      <p className="text-gray-400 text-xs font-bold uppercase mt-1">
-        {title}
-      </p>
+      <p className="text-gray-400 text-xs font-bold uppercase mt-1">{title}</p>
     </div>
   );
 }
