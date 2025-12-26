@@ -53,17 +53,17 @@ const RecommendationsPage = () => {
   };
 
   return (
-    // DÜZELTME 1: Arka planı 'Movies.tsx' ile aynı yaptık (Açık renk gradient)
-    // DÜZELTME 2: Yazı rengini koyu yaptık (text-gray-900)
+    // Arka planı 'Movies.tsx' ile aynı yaptık (Açık renk gradient)
+    // Yazı rengini koyu yaptık (text-gray-900)
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 page-transition">
 
       <div className="max-w-7xl mx-auto">
 
         {/* Başlık ve Geri Dön Butonu */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            // DÜZELTME 3: Buton renklerini açık temaya uygun hale getirdik
+          <button 
+            onClick={() => navigate(-1)} 
+            // Buton renklerini açık temaya uygun hale getirdik
             className="text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-2 self-start sm:self-auto font-medium"
           >
             <span className="text-xl">←</span> Go back
@@ -72,7 +72,7 @@ const RecommendationsPage = () => {
           <div className="flex items-center gap-2">
             <span className="text-3xl" role="img" aria-label="sparkles">✨</span>
             <div>
-              {/* DÜZELTME 4: Başlık rengi koyu gri/siyah */}
+              {/* Başlık rengi koyu gri/siyah */}
               <h1 className="text-3xl font-bold text-gray-900">Recommended for you.</h1>
               <p className="text-gray-600 text-sm mt-1">
                 Generated based on your viewing history and preferences.

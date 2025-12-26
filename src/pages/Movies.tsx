@@ -25,7 +25,6 @@ export default function Movies() {
     itemsPerPage: 20,
   });
 
-  // 2. DEĞİŞİKLİK: Kullanıcı ID'sini tutacak state'i ekledik
   const [userId, setUserId] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FilterType>(() => {
@@ -52,7 +51,6 @@ export default function Movies() {
   const [aiRecommendations, setAiRecommendations] = useState<Movie[]>([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
 
-  // 3. DEĞİŞİKLİK: Sayfa açılınca "Kullanıcı giriş yapmış mı?" diye kontrol eden kod
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();

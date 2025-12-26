@@ -1,4 +1,5 @@
 import type { Movie } from "../types/movie";
+import { formatRuntime, formatDate, getRatingColor } from "../utils/movieUtils";
 
 interface MovieCardProps {
   movie: Movie;
@@ -6,25 +7,6 @@ interface MovieCardProps {
 }
 
 export default function MovieCard({ movie, onClick }: MovieCardProps) {
-  const formatRuntime = (minutes: number | null) => {
-    if (!minutes || typeof minutes !== "number" || minutes <= 0) return "N/A";
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).getFullYear();
-  };
-
-  const getRatingColor = (rating: number | null) => {
-    if (!rating) return "bg-gray-500";
-    if (rating >= 8) return "bg-green-500";
-    if (rating >= 7) return "bg-yellow-500";
-    if (rating >= 6) return "bg-orange-500";
-    return "bg-red-500";
-  };
 
   return (
     <div
